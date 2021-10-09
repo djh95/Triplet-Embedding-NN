@@ -28,18 +28,18 @@ class NUS_WIDE_Helper (torch.utils.data.Dataset):
     image_tags = []
     image_list = []
     
-    def __init__(self, data_set_type, number = -1):
+    def __init__(self, data_set_type, number = -1, min_tag_num = 2):
         super().__init__() 
 
         if (data_set_type % 3) == 0:
             self.image_list_path = Image_List_Path_Train
-            self.images_number = Number_Of_Images_Train
+            #self.images_number = Number_Of_Images_Train
         elif (data_set_type % 3) == 1:
             self.image_list_path = Image_List_Path_Test
-            self.images_number = Number_Of_Images_Test
+            #self.images_number = Number_Of_Images_Test
         else:
             self.image_list_path = Image_List_Path_All
-            self.images_number = Number_Of_Images_All
+            #self.images_number = Number_Of_Images_All
 
         if data_set_type < 3:
             self.tag_list_path = Tag_List_Path_81
@@ -67,20 +67,28 @@ class NUS_WIDE_Helper (torch.utils.data.Dataset):
         
         self.tag_dic = {class_name : i for i, class_name in enumerate(self.tag_list)}
 
+        # read data
+        self.image_tags = np.loadtxt(self.image_tags_path, dtype=bool)
+        self.image_list = np.loadtxt(self.image_list_path, dtype=str)
+        self.images_number = len(self.image_tags)
+
+        # remain the data with at least min_tag_num tags
+        rows = []
+        for i in range(self.images_number):
+            if np.sum(self.image_tags[i]) > min_tag_num:
+                rows.append(i)
+        self.filter_data(rows)
+        
+        # remain number data
         if number != -1 and number < self.images_number:
             rows = random.sample(range(self.images_number), number)
-            self.images_number = number
-            
-            self.image_tags = np.loadtxt(self.image_tags_path, dtype=bool)
-            self.image_tags = [self.image_tags[i] for i in rows]
-            self.image_list = np.loadtxt(self.image_list_path, dtype=str)
-            self.image_list = [self.image_list[i] for i in rows]
-        else:
-            self.image_tags = np.loadtxt(self.image_tags_path, dtype=bool)
-            self.image_list = np.loadtxt(self.image_list_path, dtype=str)
+            self.filter_data(rows)
 
-        self.image_states = np.zeros(self.images_number)
-
+        #self.image_states = np.zeros(self.images_number)
+    def filter_data(self, rows):
+        self.image_tags = [self.image_tags[i] for i in rows]
+        self.image_list = [self.image_list[i] for i in rows]
+        self.images_number = len(self.image_tags)
     
     def get_image(self, image_name):
         
