@@ -56,9 +56,11 @@ for e in pbar:
 
     num = 0
     for (x_images,y_tags) in train_loader:
-        #if random.random() > 0.1:
-        #    continue
+        
+        if random.random() > 0.5:
+            continue
         num = num + x_images.shape[0]
+
         x_images, y_tags = x_images.to(device), y_tags.to(device)
         images_feature = image_model(x_images)
         tags_feature = tag_model(y_tags)
@@ -66,20 +68,25 @@ for e in pbar:
         # in feature space
         dist_image_tag_pos =  F.pairwise_distance(images_feature, tags_feature)
 
+        # first triplet loss, an image, cor tag, and a neg image
         anchor = images_feature
         positive = tags_feature
         z_images_neg = get_one_neighbor(images_feature, dist_image_tag_pos + Margin_Distance)
         negative = torch.cat([images_feature[i].view(1,-1) for i in z_images_neg])
 
-        Lambda = 0.3
         lossIT, dist_image_tag_pos, dist_image_image_neg = lossImageTag(anchor, positive, negative)
 
+        # second triplet loss, an image, a pos image, a neg image
         anchor = images_feature
         z_images_pos, z_images_neg = get_pos_neg(y_tags)
         positive = torch.cat([images_feature[i].view(1,-1) for i in z_images_pos])
         negative = torch.cat([images_feature[i].view(1,-1) for i in z_images_neg])
+
         lossII, dist_image_image_pos, dist_image_image_neg =lossImageImage(anchor, positive, negative)
+
+        Lambda = 0.3
         loss = lossIT +  Lambda * lossII
+
         optim.zero_grad()
         loss.backward()
         optim.step()
@@ -141,5 +148,5 @@ for e in pbar:
             }, "best_val.ckpt")
     
     pp.update([[train_loss, valid_loss], [train_positive_dis, valid_positive_dis], [train_negative_dis, valid_negative_dis]])
-    pbar.set_description(f"train loss: {train_loss:.4f}, train positive distance: {valid_positive_dis:.4f}, train negative distance: {valid_negative_dis:.4f}")
+    pbar.set_description(f"train loss: {train_loss:.4f}, pos distance: {train_positive_dis:.4f}, neg distance: {train_negative_dis:.4f}")
 pp.finalize()

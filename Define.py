@@ -38,6 +38,6 @@ Image_URLs_Path = 'NUS_WID/NUS-WIDE-urls.txt'
 Number_Of_Images_All = 269648
 Number_Of_Images_Train = 161789
 Number_Of_Images_Test = 107859
-Number_Of_Images_Valid = 10000
+Number_Of_Images_Valid = 3000
 
 

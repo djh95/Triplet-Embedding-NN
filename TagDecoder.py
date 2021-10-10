@@ -15,7 +15,9 @@ class TagDecoder(nn.Module):
             # [b, 20] => [b, 64]
             nn.Linear(Feature_Dimensions, 32),
             nn.ReLU(),
-            nn.Linear(32, 256),
+            nn.Linear(32, 128),
+            nn.ReLU(),
+            nn.Linear(128, 256),
             nn.ReLU(),
             nn.Linear(256, tag_number),
             nn.Sigmoid()
