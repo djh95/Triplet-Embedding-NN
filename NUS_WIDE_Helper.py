@@ -72,7 +72,11 @@ class NUS_WIDE_Helper (torch.utils.data.Dataset):
         # remain the data with at least min_tag_num tags
         rows = []
         for i in range(self.images_number):
-            if np.sum(self.image_tags[i]) > min_tag_num and cv2.imread(self.image_path + self.image_list[i]) != None:
+            if np.sum(self.image_tags[i]) > min_tag_num:
+                try:
+                    cv2.imread(self.get_image_path(self.image_list[i])).shape
+                except:
+                    continue
                 rows.append(i)
         self.filter_data(rows)
         
@@ -89,12 +93,15 @@ class NUS_WIDE_Helper (torch.utils.data.Dataset):
     
     def get_image(self, image_name):
         
-        image = cv2.imread(self.image_path + image_name)
+        image = cv2.imread(self.get_image_path(image_name))
         image = DataAugmentation(image)
         image = cv2.resize(image, (IMAGE_WIDTH, IMAGE_HEIGHT))
         image = image.reshape(3,IMAGE_WIDTH, IMAGE_HEIGHT)
         image = image.astype(np.float32)
         return image
+
+    def get_image_path(self, image_name):
+        return (self.image_path + image_name.replace("\\","/"))
 
     def get_tags(self, indexes):
         return [self.image_tags[i] for i in indexes]
