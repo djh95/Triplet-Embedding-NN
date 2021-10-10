@@ -72,7 +72,7 @@ class NUS_WIDE_Helper (torch.utils.data.Dataset):
         # remain the data with at least min_tag_num tags
         rows = []
         for i in range(self.images_number):
-            if np.sum(self.image_tags[i]) > min_tag_num:
+            if np.sum(self.image_tags[i]) > min_tag_num and cv2.imread(self.image_path + self.image_list[i]) != None:
                 rows.append(i)
         self.filter_data(rows)
         
