@@ -4,7 +4,6 @@ import torch.nn.functional as F
 import numpy as np
 
 from Define import *
-from SentenceCNN import *
 from NUS_WIDE_Helper import *
 from Inception import *
 
