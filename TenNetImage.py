@@ -8,8 +8,8 @@ from Inception import *
 
 
 
-#IMAGE_HEIGHT = 299
-#IMAGE_WIDTH = 299
+#IMAGE_HEIGHT = 
+#IMAGE_WIDTH = 
 #IMAGE_CHANNEL = 3
 #Feature_Dimensions = 10
 class TenNet_Image(nn.Module):

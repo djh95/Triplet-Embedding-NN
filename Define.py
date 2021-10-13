@@ -1,13 +1,13 @@
 
-IMAGE_HEIGHT = 299
-IMAGE_WIDTH = 299
+IMAGE_HEIGHT = 224
+IMAGE_WIDTH = 224
 IMAGE_CHANNEL = 3
 
-BATCH_SIZE = 128
+BATCH_SIZE = 32
 WEIGHT_DECAY = 5e-5
 
 Margin_Distance = 10
-Feature_Dimensions = 10
+Feature_Dimensions = 1000
 Word_Dimensionality = 20
 
 N_Epochs = 10

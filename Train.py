@@ -5,6 +5,8 @@ import random
 import torch
 import torch.nn.functional as F
 
+import torchvision.models as models
+
 from Utils import *
 from Define import *
 from NUS_WIDE_Helper import *
@@ -30,7 +32,8 @@ if torch.cuda.is_available():
 else:
     device = torch.device('cpu')
     
-image_model = TenNet_Image().to(device)
+#image_model = TenNet_Image().to(device)
+image_model = models.vgg16(pretrained=True).to(device)
 tag_model = TenNet_Tag(train_data.get_tag_num()).to(device)
 optim = torch.optim.Adam([{'params' : image_model.parameters()}, {'params' : tag_model.parameters()}], lr=0.001)
 
