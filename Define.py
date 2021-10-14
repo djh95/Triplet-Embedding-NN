@@ -13,6 +13,8 @@ BATCH_SIZE = 64
 WEIGHT_DECAY = 5e-5
 
 Margin_Distance = 200
+Margin_Max_Distance = 1000
+Margin_Min_Distance = 20
 Feature_Dimensions = 1000
 #25 50 100 200
 Word_Dimensionality = 25
@@ -43,9 +45,10 @@ Image_Path = 'NUS_WID/Flickr/'
 Image_URLs_Path = 'NUS_WID/NUS-WIDE-urls.txt'
 
 Number_Of_Images_All = 269648
-Number_Of_Images_Train = 161789
+#Number_Of_Images_Train = 161789
+Number_Of_Images_Train = 230*64
 Number_Of_Images_Test = 107859
-Number_Of_Images_Valid = 3000
+Number_Of_Images_Valid = 4096
 
 Word_Vector_Path = 'glove.twitter.27B/glove.twitter.27B.'
 Processed_Word_Matrix_Path = 'glove.twitter.27B/WordMatrix'
