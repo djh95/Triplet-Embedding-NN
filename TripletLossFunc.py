@@ -5,7 +5,7 @@ import torch.nn.functional as F
 
 
 class TripletLossFunc(nn.Module): 
-    def __init__(self, alpha, t1 = 0, t2 = 0, beta = 0.3): 
+    def __init__(self, alpha, t1 = 0, t2 = 0, beta = 0.05): 
         super(TripletLossFunc, self).__init__() 
         self.alpha = alpha
         self.t1 = t1

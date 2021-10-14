@@ -59,7 +59,7 @@ def get_one_neighbor(dataset, dis, maxmal=0.1):
     return indexes
 
 # For each node in dataset, find a pos and a neg samples from dataset. Maxmal check n*maxmal times
-def get_pos_neg(tag_list, maxmal=0.1):
+def get_pos_neg(tag_list, maxmal=0.4):
     num = len(tag_list)
     if num <= 2:
         print("at least 3 samples")
