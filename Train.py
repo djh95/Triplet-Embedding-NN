@@ -27,14 +27,9 @@ train_loader = torch.utils.data.DataLoader(train_data, shuffle=True, batch_size=
 valid_loader = torch.utils.data.DataLoader(valid_data, shuffle=False, batch_size=batch_size)
 #test_loader = torch.utils.data.DataLoader(test_data, shuffle=False, batch_size=batch_size)
 
-if torch.cuda.is_available():
-    device = torch.device('cuda')
-else:
-    device = torch.device('cpu')
-    
 #image_model = TenNet_Image().to(device)
 image_model = models.vgg16(pretrained=True).to(device)
-tag_model = TenNet_Tag(train_data.get_tag_num()).to(device)
+tag_model = TenNet_Tag(train_data.get_tag_list()).to(device)
 optim = torch.optim.Adam([{'params' : image_model.parameters()}, {'params' : tag_model.parameters()}], lr=0.001)
 
 

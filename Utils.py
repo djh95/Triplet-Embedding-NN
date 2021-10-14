@@ -3,6 +3,8 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 import random
+import os
+import json 
 
 from Define import *
 
@@ -138,7 +140,31 @@ def get_multy_tag_indexes(tags):
         indexes.append([j for j in range(tags.shape[1]) if tags[i][j] == 1])
     return indexes
 
+def get_word_vector_matrix(vocabulary_list, dimensions):
+    
+    matrix_path = Processed_Word_Matrix_Path + str(dimensions) + ".txt"
 
+    if os.path.isfile(matrix_path):
+        matrix = [line.strip().split() for line in open(matrix_path).readlines()]
+        matrix = [list( map(float,i) ) for i in matrix]
+
+    else:
+        full_matrix_path = Word_Vector_Path + str(dimensions) + "d.txt"
+        full_matrix = [line.strip().split() for line in open(full_matrix_path,'rb').readlines()]
+        m = [full_matrix[i] for i in range(len(full_matrix)) if full_matrix[i][0].decode("utf-8") in vocabulary_list]
+
+        matrix = [[] for i in range(len(vocabulary_list))]
+        for i in range(len(vocabulary_list)):
+            pos = vocabulary_list.index(m[i][0].decode("utf-8"))
+            matrix[pos] = [float(_.decode("utf-8")) for _ in m[i][1:]]
+
+        with open(matrix_path, 'w') as f:
+            for i in range(len(matrix)):
+                for value in matrix[i]:
+                    f.write(str(value) + " ")
+                f.write("\n")
+
+    return matrix
 
 
 if __name__ == '__main__':

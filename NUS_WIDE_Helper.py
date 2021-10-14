@@ -60,7 +60,7 @@ class NUS_WIDE_Helper (torch.utils.data.Dataset):
         self.image_urls_path = Image_URLs_Path
 
         self.tag_list = [line.strip() for line in open(self.tag_list_path).readlines()]
-        self.tag_list = np.asarray(self.tag_list)
+        #self.tag_list = np.asarray(self.tag_list)
         
         self.tag_dic = {class_name : i for i, class_name in enumerate(self.tag_list)}
 
@@ -114,7 +114,9 @@ class NUS_WIDE_Helper (torch.utils.data.Dataset):
         #print(tag.shape)
         return np.asarray(tag).astype(np.int32)
 
-        
+    def get_tag_list(self):
+        return self.tag_list
+
     def get_tag_num(self):
         return len(self.tag_list)
 
