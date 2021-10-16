@@ -19,7 +19,7 @@ Feature_Dimensions = 1000
 #25 50 100 200
 Word_Dimensionality = 25
 
-N_Epochs = 50
+N_Epochs = 8
 N_Epochs_Decoder = 10
 
 Threshold = 0.5
