@@ -25,20 +25,17 @@ def process(x_images, y_tags, image_model, tag_model, lossImageTag, lossImageIma
     dist_image_tag_pos =  F.pairwise_distance(images_feature, tags_feature)
 
     # first triplet loss, an image, cor tag, and a neg image
-    anchor = images_feature
-    positive = tags_feature
-    z_images_neg = get_one_neighbor(images_feature, dist_image_tag_pos + Margin_Distance)
-    negative = torch.cat([images_feature[i].view(1,-1) for i in z_images_neg])
+    anchor_image = images_feature
+    positive_tag = tags_feature
 
-    lossIT, dist_image_tag_pos, dist_image_image_neg_1 = lossImageTag(anchor, positive, negative)
+    z_images_pos, z_images_neg = get_pos_neg(y_tags)
+    positive_image = torch.cat([images_feature[i].view(1,-1) for i in z_images_pos])
+    negative_image = torch.cat([images_feature[i].view(1,-1) for i in z_images_neg])
+
+    lossIT, dist_image_tag_pos, dist_image_image_neg_1 = lossImageTag(anchor_image, positive_tag, negative_image)
 
     # second triplet loss, an image, a pos image, a neg image
-    anchor = images_feature
-    z_images_pos, z_images_neg = get_pos_neg(y_tags)
-    positive = torch.cat([images_feature[i].view(1,-1) for i in z_images_pos])
-    negative = torch.cat([images_feature[i].view(1,-1) for i in z_images_neg])
-
-    lossII, dist_image_image_pos, dist_image_image_neg_2 =lossImageImage(anchor, positive, negative)
+    lossII, dist_image_image_pos, dist_image_image_neg_2 =lossImageImage(anchor_image, positive_image, negative_image)
     loss = lossIT +  Lambda * lossII
 
     return loss, dist_image_tag_pos, dist_image_image_pos, dist_image_image_neg_1, dist_image_image_neg_2

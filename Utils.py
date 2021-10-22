@@ -34,7 +34,7 @@ def my_one_hot(tag):
     return vector
 
 # For each node in dataset, find a neighbor from dataset, such that the distance between them is less than dis. Maxmal check n*maxmal times
-def get_one_neighbor(dataset, dis, maxmal=0.1):
+def get_one_neighbor(dataset, dis, maxmal=0.3):
     num = len(dataset)
     if num <= 1:
         print("at least 2 samples")
@@ -46,7 +46,7 @@ def get_one_neighbor(dataset, dis, maxmal=0.1):
         min_dis = -1
         for j in range(maxmal):
             index = random.randint(1,num-1)
-            if index <= i:
+            if index < i:
                 index = i-1
             temp_dis = F.pairwise_distance(dataset[i].view(1,-1), dataset[index].view(1,-1))
             if  temp_dis < dis[i]:
