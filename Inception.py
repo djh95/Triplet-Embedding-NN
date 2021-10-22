@@ -17,23 +17,29 @@ class Inception(nn.Module):
         super().__init__()
         self.p1 = nn.Sequential(
             nn.Conv2d(in_c,c1,kernel_size=1),
+            nn.BatchNorm2d(c1),
             nn.ReLU()
         )  
         self.p2 = nn.Sequential(
             nn.Conv2d(in_c,c2[0],kernel_size=1),
+            nn.BatchNorm2d(c2[0]),
             nn.ReLU(),
             nn.Conv2d(c2[0], c2[1], kernel_size=3,padding=1),
+            nn.BatchNorm2d(c2[1]),
             nn.ReLU()
         )
         self.p3 = nn.Sequential(
             nn.Conv2d(in_c, c3[0], kernel_size=1),
+            nn.BatchNorm2d(c3[0]),
             nn.ReLU(),
             nn.Conv2d(c3[0], c3[1], kernel_size=5,padding=2),
+            nn.BatchNorm2d(c3[1]),
             nn.ReLU()
         )
         self.p4 = nn.Sequential(
             nn.MaxPool2d(kernel_size=3,stride=1,padding=1),
             nn.Conv2d(in_c,c4,kernel_size=1),
+            nn.BatchNorm2d(c4),
             nn.ReLU()
         )
     def forward(self, x):

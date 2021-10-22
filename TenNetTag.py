@@ -27,27 +27,28 @@ class TenNet_Tag(nn.Module): # input batchSize * 1 * tagNum * tagNum
             self.embedding_static.weight.requires_grad = False
             self.IN_CHANNEL = 2               
 
-        self.b1 = nn.Sequential(
-            nn.Conv2d(self.IN_CHANNEL, 4, kernel_size=3, padding=1),
-            nn.ReLU(),
-            nn.MaxPool2d(kernel_size=3,padding=1), 
-            nn.Conv2d(4,8,kernel_size=1),
-            nn.Conv2d(8,16,kernel_size=3,padding=1),
-            nn.MaxPool2d(kernel_size=3,padding=1)
-        )
-            #Inception(192,64,(96,128),(16,32),32), 
-            #Inception(256,128,(128,192),(32,96),64), 
-        self.b2 = nn.Sequential( 
-            Inception(16,8,(8,16),(2,4),4), 
+ 
+        self.feature = nn.Sequential( 
+            Inception(1,4,(4,8),(2,4),4), 
             nn.MaxPool2d(kernel_size=3,stride=2,padding=1),
-            Inception(32,16,(8,12),(4,8),8), 
+            Inception(20,8,(8,16),(2,4),4), 
+            nn.MaxPool2d(kernel_size=3,stride=2,padding=1),
+            Inception(32,8,(8,16),(8,16),8), 
+            nn.MaxPool2d(kernel_size=3,stride=2,padding=1),
+            Inception(48,32,(8,32),(8,32),32), 
             GlobalAvgPool2d() 
         ) 
-        self.feature = nn.Sequential(
-            self.b1,self.b2
-        )
+
         self.fc = nn.Sequential( 
-            nn.Linear(44 ,self.Feature_Dimensions)
+            nn.Linear(in_features=128, out_features=256, bias=True),
+            nn.BatchNorm1d(256),
+            nn.ReLU(inplace=True),
+            nn.Dropout(p=dropout_probability, inplace=False),
+            nn.Linear(in_features=256, out_features=1028, bias=True),
+            nn.BatchNorm1d(1028),
+            nn.ReLU(inplace=True),
+            nn.Dropout(p=dropout_probability, inplace=False),
+            nn.Linear(in_features=1028, out_features=self.Feature_Dimensions, bias=True)
         )
 
     def forward(self, tags):
@@ -68,8 +69,7 @@ class TenNet_Tag(nn.Module): # input batchSize * 1 * tagNum * tagNum
             #x2 = extend(x2, self.Feature_Dimensions).view(-1, 1, self.VOCAB_SIZE, self.WORD_DIM)
             x = torch.cat((x, x2), 1)
 
-        x = self.feature(x)
-        x = x.view(x.size(0),-1)
-        x = self.fc(x)
-        x = F.dropout(x, p=self.DROPOUT_PROB, training=self.training)
-        return x
+        out = self.feature(x)
+        out = out.view(out.size(0),-1)
+        out = self.fc(out)
+        return F.normalize(out)

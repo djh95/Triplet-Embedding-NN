@@ -12,12 +12,14 @@ IMAGE_CHANNEL = 3
 BATCH_SIZE = 50
 WEIGHT_DECAY = 5e-5
 
-Margin_Distance = 200
-Margin_Max_Distance = 1000
-Margin_Min_Distance = 20
+
 Feature_Dimensions = 1000
 #25 50 100 200
 Word_Dimensionality = 25
+
+Margin_Distance = Feature_Dimensions * 0.05
+Margin_Max_Distance = Feature_Dimensions * 0.25
+Margin_Min_Distance = Feature_Dimensions * 0.02
 
 N_Epochs = 8
 N_Epochs_Decoder = 10
