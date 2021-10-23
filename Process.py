@@ -77,7 +77,6 @@ def single_epoch_computation(image_model, tag_model, data_loader, lossIT, lossII
 
 def train(image_model, tag_model, data_loader, lossIT, lossII, Lambda, optim, number):
 
-
     image_model.train()
     tag_model.train()
 
@@ -103,7 +102,7 @@ def evalue(image_model, tag_model, data_loader, lossIT, lossII, Lambda, optim, n
             'loss': res[0],
             }, "best_val.ckpt")
             
-    return res.item() , min_loss
+    return res + (min_loss,)
 
 def output_loss_dis(s, loss_dis):
     print(  s + "\n" +
