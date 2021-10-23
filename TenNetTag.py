@@ -29,7 +29,7 @@ class TenNet_Tag(nn.Module): # input batchSize * 1 * tagNum * tagNum
 
  
         self.feature = nn.Sequential( 
-            Inception(1,4,(4,8),(2,4),4), 
+            Inception(self.IN_CHANNEL,4,(4,8),(2,4),4), 
             nn.MaxPool2d(kernel_size=3,stride=2,padding=1),
             Inception(20,8,(8,16),(2,4),4), 
             nn.MaxPool2d(kernel_size=3,stride=2,padding=1),

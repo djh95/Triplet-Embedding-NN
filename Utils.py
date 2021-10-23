@@ -34,7 +34,7 @@ def my_one_hot(tag):
     return vector
 
 # For each node in dataset, find a neighbor from dataset, such that the distance between them is less than dis. Maxmal check n*maxmal times
-def get_one_neighbor(dataset, dis, maxmal=0.3):
+def get_one_neighbor(dataset, similarity_matrix, dis, maxmal=0.4):
     num = len(dataset)
     if num <= 1:
         print("at least 2 samples")
@@ -44,22 +44,32 @@ def get_one_neighbor(dataset, dis, maxmal=0.3):
     for i in range(num):
         candidate = -1
         min_dis = -1
+        min_similarity = 3
         for j in range(maxmal):
             index = random.randint(1,num-1)
-            if index < i:
-                index = i-1
+            if index == i:
+                index = 0
             temp_dis = F.pairwise_distance(dataset[i].view(1,-1), dataset[index].view(1,-1))
-            if  temp_dis < dis[i]:
+            if  similarity_matrix[i][index] == 0 and temp_dis < dis[i]:
                 candidate = index
                 break
-            if min_dis == -1 or min_dis >  temp_dis:
+            if similarity_matrix[i][index] < min_similarity and (min_dis == -1 or min_dis >  temp_dis):
+                min_similarity = similarity_matrix[i][index]
                 candidate = index
                 min_dis = temp_dis
         indexes.append(candidate)
     return indexes
 
+def get_similarity_matrix(tag_list):
+    m = torch.zeros((tag_list.shape[0],tag_list.shape[0])).to(device)
+    for i in range(tag_list.shape[0]):
+        for j in range(i,tag_list.shape[0]):
+            m[i][j] = similarity_tags(tag_list[i], tag_list[j])
+            m[j][i] = m[i][j]
+    return m
+
 # For each node in dataset, find a pos and a neg samples from dataset. Maxmal check n*maxmal times
-def get_pos_neg(tag_list, maxmal=0.4):
+def get_pos_neg(tag_list, similarity_matrix, maxmal=0.4):
     num = len(tag_list)
     if num <= 2:
         print("at least 3 samples")
@@ -76,7 +86,7 @@ def get_pos_neg(tag_list, maxmal=0.4):
             index = random.randint(1,num-1)
             if index <= i:
                 index = i-1
-            similarity = similarity_tags(tag_list[i], tag_list[index])
+            similarity = similarity_matrix[i][index]
             if min_similarity == -1 or min_similarity > similarity:
                 min_similarity = similarity
                 min_index = index

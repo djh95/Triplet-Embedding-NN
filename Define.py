@@ -13,9 +13,9 @@ BATCH_SIZE = 50
 WEIGHT_DECAY = 5e-5
 
 
-Feature_Dimensions = 1000
+Feature_Dimensions = 512
 #25 50 100 200
-Word_Dimensionality = 25
+Word_Dimensionality = 50
 
 Margin_Distance = Feature_Dimensions * 0.05
 Margin_Max_Distance = Feature_Dimensions * 0.25
