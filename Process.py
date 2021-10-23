@@ -11,12 +11,11 @@ from Define import *
 from NUS_WIDE_Helper import *
 
 from jupyterplot import ProgressPlot
-from tqdm.notebook import tqdm
 from TenNetImage import *
 from TenNetTag import *
 from TagDecoder import *
 
-def compute_loss(x_images, y_tags, image_model, tag_model, lossImageTag, lossImageImage, Lambda = 0.1):
+def compute_loss(x_images, y_tags, image_model, tag_model, triplet_loss, Lambda = 0.1):
 
     image_features = image_model(x_images)
     tag_features = tag_model(y_tags)
@@ -36,25 +35,27 @@ def compute_loss(x_images, y_tags, image_model, tag_model, lossImageTag, lossIma
     positive_image = torch.cat([image_features[i].view(1,-1) for i in z_images_pos])
     negative_image = torch.cat([image_features[i].view(1,-1) for i in z_images_neg])
 
-    lossIT, dist_image_tag_pos, dist_image_tag_neg = lossImageTag(anchor_image, positive_tag, negative_tag)
+    lossIT, dist_image_tag_pos, dist_image_tag_neg = triplet_loss(anchor_image, positive_tag, negative_tag)
 
     # second triplet loss, an image, a pos image, a neg image
-    lossII, dist_image_image_pos, dist_image_image_neg =lossImageImage(anchor_image, positive_image, negative_image)
+    lossII, dist_image_image_pos, dist_image_image_neg =triplet_loss(anchor_image, positive_image, negative_image)
     loss = lossIT +  Lambda * lossII
 
     return loss, dist_image_tag_pos, dist_image_image_pos, dist_image_tag_neg, dist_image_image_neg
 
-def single_epoch_computation(image_model, tag_model, data_loader, lossIT, lossII, Lambda, optim, number, updata):
+def single_epoch_computation(image_model, tag_model, data_loader, triplet_loss, Lambda, optim, updata):
     loss = 0
     IT_positive_dis = 0
     II_positive_dis = 0
     IT_negative_dis = 0
     II_negative_dis = 0
 
+    number = len(data_loader) * BATCH_SIZE
+    
     for (x_images,y_tags) in data_loader:
         
         x_images, y_tags = x_images.to(device), y_tags.to(device)    
-        res = compute_loss(x_images, y_tags, image_model, tag_model, lossIT, lossII, Lambda)
+        res = compute_loss(x_images, y_tags, image_model, tag_model, triplet_loss, Lambda)
 
         if updata:
             optim.zero_grad()
@@ -67,7 +68,7 @@ def single_epoch_computation(image_model, tag_model, data_loader, lossIT, lossII
         IT_negative_dis += res[3].float().sum().item()
         II_negative_dis += res[4].float().sum().item()
 
-    loss /= len(data_loader)
+    loss /= number
     IT_positive_dis /= number
     II_positive_dis /= number
     IT_negative_dis /= number
@@ -75,22 +76,22 @@ def single_epoch_computation(image_model, tag_model, data_loader, lossIT, lossII
 
     return loss, IT_positive_dis, II_positive_dis, IT_negative_dis, II_negative_dis
 
-def train(image_model, tag_model, data_loader, lossIT, lossII, Lambda, optim, number):
+def train(image_model, tag_model, data_loader, triplet_loss, Lambda, optim):
 
     image_model.train()
     tag_model.train()
 
-    res = single_epoch_computation(image_model, tag_model, data_loader, lossIT, lossII, Lambda, optim, number, updata=True)
+    res = single_epoch_computation(image_model, tag_model, data_loader, triplet_loss, Lambda, optim, updata=True)
 
     return res
 
-def evalue(image_model, tag_model, data_loader, lossIT, lossII, Lambda, optim, number, epoch, min_loss, save_best=True):
+def evalue(image_model, tag_model, data_loader, triplet_loss, Lambda, optim, epoch, min_loss, save_best=True):
     
     image_model.eval()
     tag_model.eval()
 
     with torch.no_grad():
-        res = single_epoch_computation(image_model, tag_model, data_loader, lossIT, lossII, Lambda, optim, number, updata=False)
+        res = single_epoch_computation(image_model, tag_model, data_loader, triplet_loss, Lambda, optim, updata=False)
 
     if save_best and (min_loss == -1 or min_loss > res[0]):
         min_loss = res[0]

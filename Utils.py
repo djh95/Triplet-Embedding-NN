@@ -117,7 +117,7 @@ def Precision_Recall_Tags(pred_tags, gt_tags):
     return precision, recall, mAP
 
 def similarity_tags(tag1, tag2):
-    return (torch.tensor(tag1) == torch.tensor(tag2)).float().sum().item()
+    return len(torch.nonzero(tag1 * tag2))
 
 def get_tag_from_prediction(predictions, threshold=0.5):
     tags = []
