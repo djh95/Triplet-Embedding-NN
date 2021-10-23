@@ -6,6 +6,7 @@ import numpy as np
 from Define import *
 from NUS_WIDE_Helper import * 
 from Inception import *
+from Utils import *
 
 
 class TenNet_Tag(nn.Module): # input batchSize * 1 * tagNum * tagNum
@@ -40,11 +41,11 @@ class TenNet_Tag(nn.Module): # input batchSize * 1 * tagNum * tagNum
         ) 
 
         self.fc = nn.Sequential( 
-            nn.Linear(in_features=128, out_features=256, bias=True),
-            nn.BatchNorm1d(256),
+            nn.Linear(in_features=128, out_features=512, bias=True),
+            nn.BatchNorm1d(512),
             nn.ReLU(inplace=True),
             nn.Dropout(p=dropout_probability, inplace=False),
-            nn.Linear(in_features=256, out_features=1028, bias=True),
+            nn.Linear(in_features=512, out_features=1028, bias=True),
             nn.BatchNorm1d(1028),
             nn.ReLU(inplace=True),
             nn.Dropout(p=dropout_probability, inplace=False),
@@ -72,4 +73,4 @@ class TenNet_Tag(nn.Module): # input batchSize * 1 * tagNum * tagNum
         out = self.feature(x)
         out = out.view(out.size(0),-1)
         out = self.fc(out)
-        return F.normalize(out)
+        return minmaxscaler(out)

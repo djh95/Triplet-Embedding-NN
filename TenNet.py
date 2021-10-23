@@ -50,8 +50,6 @@ def single_epoch_computation(image_model, tag_model, data_loader, triplet_loss, 
     IT_negative_dis = 0
     II_negative_dis = 0
 
-    number = len(data_loader) * BATCH_SIZE
-    
     for (x_images,y_tags) in data_loader:
         
         x_images, y_tags = x_images.to(device), y_tags.to(device)    
@@ -63,16 +61,16 @@ def single_epoch_computation(image_model, tag_model, data_loader, triplet_loss, 
             optim.step()
 
         loss += res[0].item()
-        IT_positive_dis += res[1].float().sum().item()
-        II_positive_dis += res[2].float().sum().item()
-        IT_negative_dis += res[3].float().sum().item()
-        II_negative_dis += res[4].float().sum().item()
+        IT_positive_dis += res[1].item()
+        II_positive_dis += res[2].item()
+        IT_negative_dis += res[3].item()
+        II_negative_dis += res[4].item()
 
-    loss /= number
-    IT_positive_dis /= number
-    II_positive_dis /= number
-    IT_negative_dis /= number
-    II_negative_dis /= number
+    loss /= len(data_loader)
+    IT_positive_dis /= len(data_loader)
+    II_positive_dis /= len(data_loader)
+    IT_negative_dis /= len(data_loader)
+    II_negative_dis /= len(data_loader)
 
     return loss, IT_positive_dis, II_positive_dis, IT_negative_dis, II_negative_dis
 

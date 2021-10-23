@@ -46,7 +46,7 @@ class TenNet_Image(nn.Module):
         out = self.feature(x)
         out = out.reshape(out.size(0), -1)
         out = self.fc(out)
-        return F.normalize(out)
+        return minmaxscaler(out)
 
 class TenNet_Image2(nn.Module):
     def __init__(self):

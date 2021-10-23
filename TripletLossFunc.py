@@ -13,13 +13,11 @@ class TripletLossFunc(nn.Module):
         self.t1 = t1
         self.t2 = t2
         self.beta = beta
-        return 
 
     def forward(self, anchor, positive, negative): 
         matched = F.pairwise_distance(anchor, positive)
         mismatched = F.pairwise_distance(anchor, negative)
         part_1 = torch.clamp(matched - mismatched + self.alpha, min=self.t1) 
         part_2 = torch.clamp(matched, min=self.t2) 
-        dist_hinge = part_1 + self.beta * part_2 
-        loss = torch.mean(dist_hinge) 
-        return loss, matched, mismatched
+        loss = part_1 + self.beta * part_2 
+        return torch.mean(loss), torch.mean(matched), torch.mean(mismatched)

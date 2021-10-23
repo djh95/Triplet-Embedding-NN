@@ -176,8 +176,7 @@ def get_word_vector_matrix(vocabulary_list, dimensions):
 
     return matrix
 
-
-if __name__ == '__main__':
-    precision, recall, mAP = Precision_Recall_Tags(['Sky', 'Ocean', 'Person'],
-                                                   ['Rain', 'Person', 'Car', 'Sky'])
-    print(precision, recall, mAP)
+def minmaxscaler(data):
+    dmin = torch.min(data)
+    dmax = torch.max(data)    
+    return (data - dmin)/(dmax-dmin)
