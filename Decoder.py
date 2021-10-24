@@ -27,14 +27,12 @@ tag_model = TenNet_Tag(train_data.get_tag_num()).to(device)
 optim = torch.optim.Adam([{'params' : image_model.parameters()}, {'params' : tag_model.parameters()}], lr=0.001)
 '''
 
-def train_decoder(tag_model, image_model, train_data, train_loader, valid_loader):
+def train(model, tag_model, image_model, train_data, train_loader, valid_loader):
+    model.train()
+
+def evalue(model, tag_model, image_model, train_data, train_loader, valid_loader):
     n_epochs = N_Epochs_Decoder
 
-    if torch.cuda.is_available():
-        device = torch.device('cuda')
-    else:
-        device = torch.device('cpu')
-    
     model = TagDecoder(train_data.get_tag_num()).to(device)
     optim = torch.optim.Adam(model.parameters(), lr=0.001)
 

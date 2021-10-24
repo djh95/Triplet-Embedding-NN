@@ -25,12 +25,6 @@ class TenNet_Image(nn.Module):
         self.feature = models.vgg16(pretrained=True).features	
 
         self.fc = nn.Sequential(
-            nn.Linear(int(self.image_H/8) * int(self.image_H/8) * 32, 50),
-            nn.BatchNorm1d(50),
-            nn.ReLU(),
-            nn.Linear(50, self.feature_dimensions))
-
-        self.fc = nn.Sequential(
             nn.Linear(in_features=25088, out_features=4096, bias=True),
             nn.BatchNorm1d(4096),
             nn.ReLU(inplace=True),
