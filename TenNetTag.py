@@ -10,7 +10,7 @@ from Utils import *
 
 
 class TenNet_Tag(nn.Module): # input batchSize * 1 * tagNum * tagNum
-    def __init__(self, vocabulary_list, dropout_probability=0.2):
+    def __init__(self, vocabulary_list, dropout_probability=0.3):
         super().__init__()
         
         self.Feature_Dimensions = Feature_Dimensions

@@ -5,6 +5,7 @@ import torch
 import torch.nn.functional as F
 
 import torchvision.models as models
+from tqdm.notebook import tqdm
 
 from Utils import *
 from Define import *
@@ -43,14 +44,14 @@ def compute_loss(x_images, y_tags, image_model, tag_model, triplet_loss, Lambda 
 
     return loss, dist_image_tag_pos, dist_image_image_pos, dist_image_tag_neg, dist_image_image_neg
 
-def single_epoch_computation(image_model, tag_model, data_loader, triplet_loss, Lambda, optim, updata):
+def single_epoch_computation(image_model, tag_model, loader, triplet_loss, Lambda, optim, updata):
     loss = 0
     IT_positive_dis = 0
     II_positive_dis = 0
     IT_negative_dis = 0
     II_negative_dis = 0
 
-    for (x_images,y_tags) in data_loader:
+    for (x_images,y_tags) in loader:
         
         x_images, y_tags = x_images.to(device), y_tags.to(device)    
         res = compute_loss(x_images, y_tags, image_model, tag_model, triplet_loss, Lambda)
@@ -66,30 +67,30 @@ def single_epoch_computation(image_model, tag_model, data_loader, triplet_loss, 
         IT_negative_dis += res[3].item()
         II_negative_dis += res[4].item()
 
-    loss /= len(data_loader)
-    IT_positive_dis /= len(data_loader)
-    II_positive_dis /= len(data_loader)
-    IT_negative_dis /= len(data_loader)
-    II_negative_dis /= len(data_loader)
+    loss /= len(loader)
+    IT_positive_dis /= len(loader)
+    II_positive_dis /= len(loader)
+    IT_negative_dis /= len(loader)
+    II_negative_dis /= len(loader)
 
     return loss, IT_positive_dis, II_positive_dis, IT_negative_dis, II_negative_dis
 
-def train(image_model, tag_model, data_loader, triplet_loss, Lambda, optim):
+def train(image_model, tag_model, loader, triplet_loss, Lambda, optim):
 
     image_model.train()
     tag_model.train()
 
-    res = single_epoch_computation(image_model, tag_model, data_loader, triplet_loss, Lambda, optim, updata=True)
+    res = single_epoch_computation(image_model, tag_model, loader, triplet_loss, Lambda, optim, updata=True)
 
     return res
 
-def evalue(image_model, tag_model, data_loader, triplet_loss, Lambda, optim, epoch, min_loss, save_best=True):
+def evalue(image_model, tag_model, loader, triplet_loss, Lambda, optim, epoch, min_loss, save_best=True):
     
     image_model.eval()
     tag_model.eval()
 
     with torch.no_grad():
-        res = single_epoch_computation(image_model, tag_model, data_loader, triplet_loss, Lambda, optim, updata=False)
+        res = single_epoch_computation(image_model, tag_model, loader, triplet_loss, Lambda, optim, updata=False)
 
     if save_best and (min_loss == -1 or min_loss > res[0]):
         min_loss = res[0]
@@ -110,5 +111,47 @@ def output_loss_dis(s, loss_dis):
             f"II_pos_dis: {loss_dis[2]:.2f},  " + 
             f"IT_neg_dis: {loss_dis[3]:.2f},  " + 
             f"II_neg_dis: {loss_dis[4]:.2f}\n " )
+
+def getTenModel(tag_model, image_model, name = "best_val.ckpt"):
+    try:
+        checkpoint = torch.load("best_val.ckpt")
+        image_model.load_state_dict(checkpoint['image_model_state_dict'])   
+        tag_model.load_state_dict(checkpoint['tag_model_state_dict'])        # 从字典中依次读取
+        epoch = checkpoint['epoch']
+        loss = checkpoint['loss']
+        print("loss: ", loss)
+        print("epoch: ",epoch)
+        print("Load last checkpoint data")
+    except FileNotFoundError:
+        print("Can\'t found " + name)
+
+def updataProgressPlot(pp, loss_dis_train, loss_dis_valid, max_v):
+    pp.update([ [min(loss_dis_train[0], max_v), min(loss_dis_valid[0], max_v), 0, 0],
+                [min(loss_dis_train[1], max_v), 
+                 min(loss_dis_train[2], max_v), 
+                 min(loss_dis_train[3], max_v), 
+                 min(loss_dis_train[4], max_v)]])
+
+
+
+def printResult(res, n_epochs, max_v):
+
+    pbar = tqdm(range(min(len(res), n_epochs)))
+    pp = ProgressPlot(plot_names=["loss", "train distance"],
+                  line_names=["train/pos_IT", "valid/pos_II", "0/neg_IT", "0/neg_II"],
+                  x_lim=[0, n_epochs-1], 
+                  y_lim=[0, max_v])
+
+    for e in pbar:
+    
+        loss_dis_train =  res[e][0]
+        output_loss_dis(f"epoch:{e}: 1-train dataset with train model", loss_dis_train)
+        
+        loss_dis_valid = res[e][1]   
+        output_loss_dis(f"epoch:{e}: 2-valid dataset with evalue model", loss_dis_valid)
+    
+        updataProgressPlot(pp, loss_dis_train, loss_dis_valid, max_v)
+
+    pp.finalize()
 
 

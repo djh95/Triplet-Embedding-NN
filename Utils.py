@@ -129,7 +129,7 @@ def get_tag_from_prediction(predictions, threshold=0.5):
             else:
                 temp_tag.append(0)
         tags.append(temp_tag)
-    return torch.tensor(tags)
+    return torch.tensor(tags).to(device)
 
 # word_vectors: batch * tag_num of the image * word dimensionalities
 # return: batch * tag_size * word dim
