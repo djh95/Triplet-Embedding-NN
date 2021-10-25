@@ -114,7 +114,7 @@ def output_loss_num(s, loss_num):
 
 def getDecoderModel(decoder, name = "decoder_best_val.ckpt"):
     try:
-        checkpoint = torch.load("decoder_best_val.ckpt")
+        checkpoint = torch.load(name)
         decoder.load_state_dict(checkpoint["model_state_dict"]) 
         epoch = checkpoint['epoch']
         loss = checkpoint['loss']

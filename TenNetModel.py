@@ -16,7 +16,7 @@ from TenNetImage import *
 from TenNetTag import *
 from TagDecoder import *
 
-def compute_loss(x_images, y_tags, image_model, tag_model, triplet_loss, Lambda = 0.1):
+def compute_loss(x_images, y_tags, image_model, tag_model, triplet_loss, Lambda = 0.5):
 
     image_features = image_model(x_images)
     tag_features = tag_model(y_tags)
@@ -114,7 +114,7 @@ def output_loss_dis(s, loss_dis):
 
 def getTenModel(tag_model, image_model, name = "best_val.ckpt"):
     try:
-        checkpoint = torch.load("best_val.ckpt")
+        checkpoint = torch.load(name)
         image_model.load_state_dict(checkpoint['image_model_state_dict'])   
         tag_model.load_state_dict(checkpoint['tag_model_state_dict'])        # 从字典中依次读取
         epoch = checkpoint['epoch']
