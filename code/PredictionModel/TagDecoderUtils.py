@@ -4,13 +4,9 @@ import torch.nn.functional as F
 
 from Utils import *
 from Define import *
-from NUS_WIDE_Helper import *
 
 from jupyterplot import ProgressPlot
 from tqdm.notebook import tqdm
-from TenNetImage import *
-from TenNetTag import *
-from TagDecoder import *
 
 '''
 train_loader = torch.utils.data.DataLoader(train_data, shuffle=True, batch_size=batch_size)

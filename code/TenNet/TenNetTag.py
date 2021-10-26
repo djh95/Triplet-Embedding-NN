@@ -4,8 +4,7 @@ import torch.nn.functional as F
 import numpy as np
 
 from Define import *
-from NUS_WIDE_Helper import * 
-from Inception import *
+from .Inception import *
 from Utils import *
 
 
@@ -73,4 +72,4 @@ class TenNet_Tag(nn.Module): # input batchSize * 1 * tagNum * tagNum
         out = self.feature(x)
         out = out.view(out.size(0),-1)
         out = self.fc(out)
-        return minmaxscaler(out)
+        return out

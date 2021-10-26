@@ -1,20 +1,12 @@
-from TripletLossFunc import TripletLossFunc
-import random
-
 import torch
 import torch.nn.functional as F
-
-import torchvision.models as models
 from tqdm.notebook import tqdm
+from jupyterplot import ProgressPlot
 
 from Utils import *
-from Define import *
-from NUS_WIDE_Helper import *
 
-from jupyterplot import ProgressPlot
-from TenNetImage import *
-from TenNetTag import *
-from TagDecoder import *
+from .TenNetTag import *
+from .TenNetImage import *
 
 def compute_loss(x_images, y_tags, image_model, tag_model, triplet_loss, Lambda = 0.5):
 
@@ -100,7 +92,7 @@ def evalue(image_model, tag_model, loader, triplet_loss, Lambda, optim, epoch, m
             'tag_model_state_dict': tag_model.state_dict(),
             'optim_state_dict': optim.state_dict(),
             'loss': res[0],
-            }, "best_val.ckpt")
+            }, "SavedModelState/IT_model.ckpt")
             
     return res + (min_loss,)
 
@@ -112,7 +104,7 @@ def output_loss_dis(s, loss_dis):
             f"IT_neg_dis: {loss_dis[3]:.2f},  " + 
             f"II_neg_dis: {loss_dis[4]:.2f}\n " )
 
-def getTenModel(tag_model, image_model, name = "best_val.ckpt"):
+def getTenModel(tag_model, image_model, name = "SavedModelState/IT_model.ckpt"):
     try:
         checkpoint = torch.load(name)
         image_model.load_state_dict(checkpoint['image_model_state_dict'])   
@@ -125,32 +117,73 @@ def getTenModel(tag_model, image_model, name = "best_val.ckpt"):
     except FileNotFoundError:
         print("Can\'t found " + name)
 
-def updataProgressPlot(pp, loss_dis_train, loss_dis_valid, max_v):
-    pp.update([ [min(loss_dis_train[0], max_v), min(loss_dis_valid[0], max_v), 0, 0],
-                [min(loss_dis_train[1], max_v), 
-                 min(loss_dis_train[2], max_v), 
-                 min(loss_dis_train[3], max_v), 
-                 min(loss_dis_train[4], max_v)]])
+
+def updataProgressPlot(pp, dis, loss_dis_valid, max_v):
+    pp.update([ [min(dis[0], max_v), min(loss_dis_valid[0], max_v), 0, 0],
+                [min(dis[1], max_v), 
+                 min(dis[2], max_v), 
+                 min(dis[3], max_v), 
+                 min(dis[4], max_v)]])
 
 
-
-def printResult(res, n_epochs, max_v):
+def printLossLog(res, n_epochs):
 
     pbar = tqdm(range(min(len(res), n_epochs)))
-    pp = ProgressPlot(plot_names=["loss", "train distance"],
-                  line_names=["train/pos_IT", "valid/pos_II", "0/neg_IT", "0/neg_II"],
-                  x_lim=[0, n_epochs-1], 
-                  y_lim=[0, max_v])
-
     for e in pbar:
     
-        loss_dis_train =  res[e][0]
-        output_loss_dis(f"epoch:{e}: 1-train dataset with train model", loss_dis_train)
+        dis = res[e][0]
+        output_loss_dis(f"epoch:{e}: 1-train dataset with train model", dis)
         
         loss_dis_valid = res[e][1]   
         output_loss_dis(f"epoch:{e}: 2-valid dataset with evalue model", loss_dis_valid)
+
+def printLossProgressPlot(res, n_epochs):
+
+    max_v = int(max(res[:, 0]))
+    min_v = int(min(res[:, 0]))
+
+    pp = ProgressPlot(plot_names=["loss"],
+                    line_names=["train", "valid"],
+                    x_lim=[0, n_epochs-1], 
+                    y_lim=[min_v, max_v])
+
+    pbar = tqdm(range(min(len(res), n_epochs)))
+    for e in pbar:
     
-        updataProgressPlot(pp, loss_dis_train, loss_dis_valid, max_v)
+        train_loss = res[e][0]
+        valid_loss = res[e][1]
+    
+        pp.update([[train_loss[0], valid_loss[0]]])
+
+    pp.finalize()
+
+def printDistanceProgressPlot(res, n_epochs, train=True):
+
+    max_v = int(max(res[:, 1:len(res)]))
+    min_v = int(min(res[:, 1:len(res)]))
+
+    if train:
+        names = "train distance"
+    else:
+        names = "valid distance"
+
+    pp = ProgressPlot(plot_names=[names],
+                  line_names=["pos_IT", "pos_II", "neg_IT", "neg_II"],
+                  x_lim=[0, n_epochs-1], 
+                  y_lim=[min_v, max_v])
+
+    pbar = tqdm(range(min(len(res), n_epochs)))
+    for e in pbar:
+        
+        if train:
+            dis = res[e][0]
+        else:
+            dis = res[e][1]
+    
+        pp.update([[min(dis[1], max_v), 
+                    min(dis[2], max_v), 
+                    min(dis[3], max_v), 
+                    min(dis[4], max_v)]])
 
     pp.finalize()
 

@@ -177,7 +177,7 @@ def get_word_vector_matrix(vocabulary_list, dimensions):
     return matrix
 
 def minmaxscaler(data_list):
-    for i in data_list.shape[0]:
+    for i in range(data_list.shape[0]):
         dmin = torch.min(data_list[i])
         dmax = torch.max(data_list[i])
         data_list[i] = (data_list[i] - dmin)/(dmax-dmin)
