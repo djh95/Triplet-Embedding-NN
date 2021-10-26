@@ -1,10 +1,6 @@
 import torch.nn as nn
-import torch.nn.functional as F
-import numpy as np
 
 from Define import *
-from NUS_WIDE_Helper import *
-
 
 class TagDecoder(nn.Module):
     def __init__(self, tag_number, dropout_probability=0.2):

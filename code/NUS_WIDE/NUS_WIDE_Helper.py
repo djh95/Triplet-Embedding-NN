@@ -5,9 +5,9 @@ import random
 
 from enum import IntEnum
 
-from Utils import *
+
 from Define import *
-from DataAugmentation import *
+from .DataAugmentation import *
 
 #'All_All_tags' No complete data set
 class DataSetType (IntEnum):

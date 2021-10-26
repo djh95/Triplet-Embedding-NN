@@ -1,7 +1,7 @@
 # 此为注释 – 将被 Git 忽略
 .*
 !.gitignore
-
+**.zip
 # 仅仅忽略项目根目录下的 TODO 文件，不包括 subdir/TODO
 NUS_WID/
 # 忽略 build/ 目录下的所有文件

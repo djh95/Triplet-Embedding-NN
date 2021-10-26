@@ -3,7 +3,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from Define import *
-from NUS_WIDE_Helper import *
 
 
 class GlobalAvgPool2d(nn.Module):

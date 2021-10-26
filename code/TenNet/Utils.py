@@ -4,23 +4,9 @@ import torch
 import torch.nn.functional as F
 import random
 import os
-import json 
 
 from Define import *
 
-def log_print(string, log_path = './log.txt'):
-    print(string)
-    
-    f = open(log_path, 'a+')
-    f.write(string + '\n')
-    f.close()
-
-def read_txt(path):
-    data = []
-    for line in open(path):
-        data.append(line.strip())
-    return data
-    
 def one_hot(indexes, n):
     vector = np.zeros(n, dtype = np.float32)
     vector[indexes] = 1.
@@ -97,39 +83,9 @@ def get_pos_neg(tag_list, similarity_matrix, maxmal=0.4):
         neg_indexes.append(min_index)
     return pos_indexes, neg_indexes
 
-#compare two tag sets 
-def Precision_Recall_Tags(pred_tags, gt_tags):
-    if len(pred_tags) == 0 and len(gt_tags) == 0:
-        return 100, 100, 100
-    elif len(pred_tags) == 0 or len(gt_tags) == 0:
-        return 0, 0, 0
-    
-    pred_tags = np.asarray(pred_tags)
-    gt_tags = np.asarray(gt_tags)
-
-    precision = pred_tags[:, np.newaxis] == gt_tags[np.newaxis, :]
-    recall = gt_tags[:, np.newaxis] == pred_tags[np.newaxis, :]
-    
-    precision = np.sum(precision) / len(precision) * 100
-    recall = np.sum(recall) / len(recall) * 100
-    mAP = (precision + recall) / 2
-
-    return precision, recall, mAP
 
 def similarity_tags(tag1, tag2):
     return len(torch.nonzero(tag1 * tag2))
-
-def get_tag_from_prediction(predictions, threshold=0.5):
-    tags = []
-    for i in range(predictions.shape[0]):
-        temp_tag = []
-        for j in range(predictions.shape[1]):
-            if predictions[i][j] > threshold:
-                temp_tag.append(1)
-            else:
-                temp_tag.append(0)
-        tags.append(temp_tag)
-    return torch.tensor(tags).to(device)
 
 # word_vectors: batch * tag_num of the image * word dimensionalities
 # return: batch * tag_size * word dim
@@ -177,8 +133,15 @@ def get_word_vector_matrix(vocabulary_list, dimensions):
     return matrix
 
 def minmaxscaler(data_list):
+    res = torch.zeros(data_list.shape)
     for i in range(data_list.shape[0]):
         dmin = torch.min(data_list[i])
         dmax = torch.max(data_list[i])
-        data_list[i] = (data_list[i] - dmin)/(dmax-dmin)
+        res[i] = (data_list[i] - dmin) / (dmax-dmin)
+    return res
+    for i in range(data_list.shape[0]):
+        dmin = torch.min(data_list[i])
+        dmax = torch.max(data_list[i])
+        data_list[i] = (data_list[i] - dmin)
+        data_list[i] = data_list[i] / (dmax-dmin)
     return data_list

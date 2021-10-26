@@ -5,7 +5,7 @@ import numpy as np
 
 from Define import *
 from .Inception import *
-from Utils import *
+from .Utils import *
 
 
 class TenNet_Tag(nn.Module): # input batchSize * 1 * tagNum * tagNum

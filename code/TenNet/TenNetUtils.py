@@ -3,8 +3,7 @@ import torch.nn.functional as F
 from tqdm.notebook import tqdm
 from jupyterplot import ProgressPlot
 
-from Utils import *
-
+from .Utils import *
 from .TenNetTag import *
 from .TenNetImage import *
 

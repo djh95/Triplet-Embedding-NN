@@ -1,12 +1,9 @@
-from TripletLossFunc import TripletLossFunc
 import torch
-import torch.nn.functional as F
-
-from Utils import *
-from Define import *
-
 from jupyterplot import ProgressPlot
 from tqdm.notebook import tqdm
+
+from Define import *
+from .Utils import *
 
 '''
 train_loader = torch.utils.data.DataLoader(train_data, shuffle=True, batch_size=batch_size)
