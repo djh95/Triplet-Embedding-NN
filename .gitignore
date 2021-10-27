@@ -6,10 +6,10 @@ SavedModelState/*.*
 # 仅仅忽略项目根目录下的 TODO 文件，不包括 subdir/TODO
 NUS_WID/
 # 忽略 build/ 目录下的所有文件
-build/
-__pycache__/
+**/**/**/__pycache__/
 # 会忽略 doc/notes.txt 但不包括 doc/server/arch.txt
 glove.twitter.27B/glove.twitter.27B*
 # ignore all .txt files in the doc/ directory
 doc/**/*.txt
+**/*.pyc
  
