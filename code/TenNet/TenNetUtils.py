@@ -67,13 +67,27 @@ def single_epoch_computation(image_model, tag_model, loader, triplet_loss, Lambd
 
     return loss, IT_positive_dis, II_positive_dis, IT_negative_dis, II_negative_dis
 
-def train(image_model, tag_model, loader, triplet_loss, Lambda, optim):
+def train(image_model, tag_model, loader, triplet_loss, Lambda, optim, updata=True):
 
     image_model.train()
     tag_model.train()
 
     res = single_epoch_computation(image_model, tag_model, loader, triplet_loss, Lambda, optim, updata=True)
 
+    return res
+
+def evalue2(image_model, tag_model, loader, triplet_loss, Lambda, optim):
+    
+    image_model.eval()
+    tag_model.eval()
+
+    res = single_epoch_computation(image_model, tag_model, loader, triplet_loss, Lambda, optim, updata=False)
+    return res
+
+def evalue3(image_model, tag_model, loader, triplet_loss, Lambda, optim):
+
+    with torch.no_grad():
+        res = single_epoch_computation(image_model, tag_model, loader, triplet_loss, Lambda, optim, updata=False)
     return res
 
 def evalue(image_model, tag_model, loader, triplet_loss, Lambda, optim, epoch, min_loss, save_best=True):
