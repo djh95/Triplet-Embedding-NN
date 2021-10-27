@@ -92,7 +92,7 @@ def predict(decoder, tag_model, image_model,  loader, loss_funk, optim, threshol
             'model_state_dict': decoder.state_dict(),
             'optim_state_dict': optim.state_dict(),
             'loss': res[0],
-            }, "decoder_best_val.ckpt")
+            }, "../SavedModelState/decoder_model.ckpt")
             
     return res + (max_accuracy,)
     
@@ -105,7 +105,7 @@ def output_loss_num(s, loss_num):
             f"tag_accuracy: {loss_num[4]:.2f}\n " )
     return
 
-def getDecoderModel(decoder, name = "decoder_best_val.ckpt"):
+def getDecoderModel(decoder, name = "../SavedModelState/decoder_model.ckpt"):
     try:
         checkpoint = torch.load(name)
         decoder.load_state_dict(checkpoint["model_state_dict"]) 

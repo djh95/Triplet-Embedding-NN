@@ -1,5 +1,6 @@
 import torch
 import torch.nn.functional as F
+import numpy as np
 from tqdm.notebook import tqdm
 from jupyterplot import ProgressPlot
 
@@ -91,7 +92,7 @@ def evalue(image_model, tag_model, loader, triplet_loss, Lambda, optim, epoch, m
             'tag_model_state_dict': tag_model.state_dict(),
             'optim_state_dict': optim.state_dict(),
             'loss': res[0],
-            }, "SavedModelState/IT_model.ckpt")
+            }, "../SavedModelState/IT_model.ckpt")
             
     return res + (min_loss,)
 
@@ -103,7 +104,7 @@ def output_loss_dis(s, loss_dis):
             f"IT_neg_dis: {loss_dis[3]:.2f},  " + 
             f"II_neg_dis: {loss_dis[4]:.2f}\n " )
 
-def getTenModel(tag_model, image_model, name = "SavedModelState/IT_model.ckpt"):
+def getTenModel(tag_model, image_model, name = "../SavedModelState/IT_model.ckpt"):
     try:
         checkpoint = torch.load(name)
         image_model.load_state_dict(checkpoint['image_model_state_dict'])   
@@ -138,8 +139,12 @@ def printLossLog(res, n_epochs):
 
 def printLossProgressPlot(res, n_epochs):
 
-    max_v = int(max(res[:, 0]))
-    min_v = int(min(res[:, 0]))
+    max_v = np.array(res).max(axis=0)
+    max_v = max(max_v[0][0], max_v[1][0])
+    max_v = np.ceil(max_v)
+    min_v = np.array(res).min(axis=0)
+    min_v = min(min_v[0][0], min_v[1][0])
+    min_v = np.ceil(min_v)
 
     pp = ProgressPlot(plot_names=["loss"],
                     line_names=["train", "valid"],
@@ -158,8 +163,12 @@ def printLossProgressPlot(res, n_epochs):
 
 def printDistanceProgressPlot(res, n_epochs, train=True):
 
-    max_v = int(max(res[:, 1:len(res)]))
-    min_v = int(min(res[:, 1:len(res)]))
+    max_v = np.array(res).max(axis=0)
+    max_v = max(max(max_v[0][1:5]), max(max_v[1][1:5]))
+    max_v = np.ceil(max_v)
+    min_v = np.array(res).min(axis=0)
+    min_v = min(min(min_v[0][1:5]), min(min_v[1][1:5]))
+    min_v = np.ceil(min_v)
 
     if train:
         names = "train distance"
