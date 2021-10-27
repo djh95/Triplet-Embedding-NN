@@ -1,6 +1,7 @@
 # 此为注释 – 将被 Git 忽略
 .*
-!.gitignore
+SavedModelState/*.*
+!.git*
 **.zip
 # 仅仅忽略项目根目录下的 TODO 文件，不包括 subdir/TODO
 NUS_WID/
@@ -12,4 +13,3 @@ glove.twitter.27B/glove.twitter.27B*
 # ignore all .txt files in the doc/ directory
 doc/**/*.txt
  
-SavedModelState/ 
