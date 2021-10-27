@@ -116,7 +116,7 @@ def output_loss_dis(s, loss_dis):
             f"IT_pos_dis: {loss_dis[1]:.2f},  " +
             f"II_pos_dis: {loss_dis[2]:.2f},  " + 
             f"IT_neg_dis: {loss_dis[3]:.2f},  " + 
-            f"II_neg_dis: {loss_dis[4]:.2f}\n " )
+            f"II_neg_dis: {loss_dis[4]:.2f}." )
 
 def getTenModel(tag_model, image_model, name = "../SavedModelState/IT_model.ckpt"):
     try:
