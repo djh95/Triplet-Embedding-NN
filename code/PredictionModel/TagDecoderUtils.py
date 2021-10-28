@@ -120,7 +120,7 @@ def printLossLog(res, n_epochs):
 def printLossProgressPlot(res, n_epochs):
 
     max_v = np.array(res).max(axis=0)
-    max_v = max(max(max_v[0][0]), max(max_v[1][0]))
+    max_v = max(max_v[0][0], max_v[1][0])
     max_v = np.ceil(max_v)
 
     pp = ProgressPlot(plot_names=["loss"],
