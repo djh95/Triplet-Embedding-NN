@@ -7,7 +7,11 @@ class TagDecoder(nn.Module):
         super().__init__()
         self.decoder = nn.Sequential(
             # [b, 20] => [b, 64]
-            nn.Linear(Feature_Dimensions, 1024),
+            nn.Linear(Feature_Dimensions, 2048),
+            nn.BatchNorm1d(2048),
+            nn.ReLU(),
+            nn.Dropout(p=dropout_probability, inplace=False),
+            nn.Linear(2048, 1024),
             nn.BatchNorm1d(1024),
             nn.ReLU(),
             nn.Dropout(p=dropout_probability, inplace=False),

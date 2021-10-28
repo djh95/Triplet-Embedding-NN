@@ -1,6 +1,7 @@
 import torch
 from jupyterplot import ProgressPlot
 from tqdm.notebook import tqdm
+from enum import IntEnum
 
 from Define import *
 from .Utils import *
@@ -13,21 +14,32 @@ def compute_loss(data, expect_res, encoder, decoder, loss_funk):
 
     return loss, output
 
+class LossModel (IntEnum):
+    # tag -> feature ->tag
+    DecoderModel = 0
+    # image -> feature ->tag
+    PredictModel = 1
+    HybridModel = 2
 
-
-def single_epoch_computation(decoder, image_model, tag_model, loader, loss_funk, optim, threshold, updata=True, predict=False):
+def single_epoch_computation(decoder, image_model, tag_model, loader, loss_funk, optim, threshold, updata=True, mod=LossModel.PredictModel):
     loss = 0
-    tag_corr_num = 0 # the number of correctly predicted tags
-    tag_total_num = 0 # the number of predicted tags
+    p_tag_corr_num = 0 # the number of correctly predicted tags
+    p_tag_total_num = 0 # the number of predicted tags
+    tag_total_num = 0
     
     for (x_images,y_tags) in loader:
 
         y_tags = y_tags.to(device)
-        if predict == True:
+        if mod == LossModel.PredictModel:
             x_images = x_images.to(device)
             batch_loss, output = compute_loss(x_images, y_tags, image_model, decoder, loss_funk)
-        else:
+        elif mod == LossModel.DecoderModel:
             batch_loss, output = compute_loss(y_tags, y_tags, tag_model, decoder, loss_funk)
+        else:
+            batch_loss_i, output_i = compute_loss(x_images, y_tags, image_model, decoder, loss_funk)
+            batch_loss_t, output_t = compute_loss(y_tags, y_tags, tag_model, decoder, loss_funk)
+            batch_loss = (batch_loss_i + batch_loss_t) / 2
+            output = (output_i + output_t) / 2
 
         if updata:
             optim.zero_grad()   # 清空上一步的残余更新参数值
@@ -37,27 +49,29 @@ def single_epoch_computation(decoder, image_model, tag_model, loader, loss_funk,
         loss += batch_loss.item()
         for i in range(output.shape[0]):
             predicted_tag = get_tag_from_prediction(output[i], threshold=threshold)
-            tag_corr_num = similarity_tags(y_tags[i],predicted_tag) + tag_corr_num
-            tag_total_num = predicted_tag.float().sum().item() + tag_total_num 
+            p_tag_corr_num = similarity_tags(y_tags[i],predicted_tag) + p_tag_corr_num
+            p_tag_total_num = predicted_tag.float().sum().item() + p_tag_total_num 
+        tag_total_num = sum(sum(y_tags))
 
     loss = loss / len(loader)
-    tag_corr_num = tag_corr_num / len(loader.dataset)
+    p_tag_corr_num = p_tag_corr_num / len(loader.dataset)
+    p_tag_total_num = p_tag_total_num / len(loader.dataset)
     tag_total_num = tag_total_num / len(loader.dataset)
 
-    if tag_total_num == 0:
+    if p_tag_total_num == 0:
         tag_accuracy = 0
     else:
-        tag_accuracy = tag_corr_num / tag_total_num
+        tag_accuracy = p_tag_corr_num / p_tag_total_num
 
-    return loss, tag_corr_num, tag_total_num, tag_accuracy
+    return loss, p_tag_corr_num, p_tag_total_num, tag_accuracy, tag_total_num
 
-def train(decoder, tag_model, image_model,  loader, loss_funk, optim, threshold=0.5):
+def train(decoder, tag_model, image_model,  loader, loss_funk, optim, threshold=0.5, mod=LossModel.DecoderModel):
     
     tag_model.eval()
     image_model.eval()
     decoder.train()
     
-    res = single_epoch_computation(decoder, image_model, tag_model, loader, loss_funk, optim, threshold, updata=True, predict=False)
+    res = single_epoch_computation(decoder, image_model, tag_model, loader, loss_funk, optim, threshold, updata=True, mod=mod)
 
     return res
 
@@ -68,7 +82,7 @@ def predict(decoder, tag_model, image_model,  loader, loss_funk, optim, threshol
     decoder.eval()
 
     with torch.no_grad():
-        res = single_epoch_computation(decoder, image_model, tag_model, loader, loss_funk, optim, threshold, updata=False, predict=True)
+        res = single_epoch_computation(decoder, image_model, tag_model, loader, loss_funk, optim, threshold, updata=False, mod=LossModel.PredictModel)
 
     if save_best and res[3] > max_accuracy:
         max_accuracy = res[3]
@@ -85,9 +99,10 @@ def predict(decoder, tag_model, image_model,  loader, loss_funk, optim, threshol
 def output_loss_num(s, loss_num):
     print(  s + "\n" +
             f"loss: {loss_num[0]:.2f},  " +
-            f"tag_corr_num: {loss_num[1]:.2f},  " +
-            f"tag_total_num: {loss_num[2]:.2f},  " + 
-            f"tag_accuracy: {loss_num[3]:.2f} " )
+            f"p_tag_corr_num: {loss_num[1]:.2f},  " +
+            f"p_tag_total_num: {loss_num[2]:.2f},  " + 
+            f"P_tag_accuracy: {loss_num[3]:.2f},  " +  
+            f"tag_total_num: {loss_num[4]:.2f}")
     return
 
 def getDecoderModel(decoder, name = "../SavedModelState/decoder_model.ckpt"):
@@ -145,7 +160,7 @@ def printTagNumProgressPlot(res, n_epochs):
     max_v = np.ceil(max_v)
 
     pp = ProgressPlot(plot_names=["Tag num"],
-                  line_names=["correct_t", "total_t", "correct_v", "total_v"],
+                  line_names=["p_correct_t", "p_total_t", "p_correct_v", "p_total_v", "total"],
                   x_lim=[0, n_epochs-1], 
                   y_lim=[0, max_v])
 
@@ -154,6 +169,22 @@ def printTagNumProgressPlot(res, n_epochs):
     for e in pbar:
         
         loss_num = res[e]
-        pp.update([[loss_num[0][1], loss_num[0][2], loss_num[1][1], loss_num[1][2]]])
+        pp.update([[loss_num[0][1], loss_num[0][2], loss_num[1][1], loss_num[1][2], loss_num[0][4]]])
+
+    pp.finalize()
+
+def printAccuracyProgressPlot(res, n_epochs):
+
+    pp = ProgressPlot(plot_names=["Accuracy"],
+                  line_names=["train", "valid"],
+                  x_lim=[0, n_epochs-1], 
+                  y_lim=[0, 1])
+
+    pbar = tqdm(range(min(len(res), n_epochs)))
+    
+    for e in pbar:
+        
+        loss_num = res[e]
+        pp.update([[loss_num[0][3],loss_num[1][3]]])
 
     pp.finalize()
