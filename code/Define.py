@@ -13,11 +13,11 @@ BATCH_SIZE = 16
 WEIGHT_DECAY = 5e-5
 
 
-Feature_Dimensions = 1000 * 2 ** 2
+Feature_Dimensions = 1000
 #25 50 100 200
 Word_Dimensionality = 100
 
-Margin_Distance = Feature_Dimensions 
+Margin_Distance = Feature_Dimensions * 2 ** 2 
 
 N_Epochs = 20
 N_Epochs_Decoder = 10
