@@ -102,7 +102,7 @@ def output_loss_num(s, loss_num):
             f"loss: {loss_num[0]:.2f},  " +
             f"tag_corr_num: {loss_num[1]:.2f},  " +
             f"tag_total_num: {loss_num[2]:.2f},  " + 
-            f"tag_accuracy: {loss_num[4]:.2f}\n " )
+            f"tag_accuracy: {loss_num[4]:.2f} " )
     return
 
 def getDecoderModel(decoder, name = "../SavedModelState/decoder_model.ckpt"):
@@ -142,5 +142,69 @@ def printResult(res, n_epochs):
         output_loss_num(f"epoch:{e}: 2-valid dataset with evalue model", loss_num_valid)
     
         updataProgressPlot(pp, loss_num_train, loss_num_valid)
+
+def printLossLog(res, n_epochs):
+
+    pbar = tqdm(range(min(len(res), n_epochs)))
+    for e in pbar:
         
+        loss_num_train =  res[e][0]
+        output_loss_num(f"epoch:{e}: 1-train dataset with train model", loss_num_train)
+        
+        loss_num_valid = res[e][1]   
+        output_loss_num(f"epoch:{e}: 2-valid dataset with evalue model", loss_num_valid)
+
+def printLossProgressPlot(res, n_epochs):
+
+    max_v = np.array(res).max(axis=0)
+    max_v = max(max(max_v[0][0]), max(max_v[1][0]))
+    max_v = np.ceil(max_v)
+
+    pp = ProgressPlot(plot_names=["loss"],
+                    line_names=["train", "valid"],
+                    x_lim=[0, n_epochs-1], 
+                    y_lim=[0, max_v])
+
+    pbar = tqdm(range(min(len(res), n_epochs)))
+    for e in pbar:
+    
+        train_loss = res[e][0]
+        valid_loss = res[e][1]
+    
+        pp.update([[train_loss[0], valid_loss[0]]])
+
+    pp.finalize()
+
+def printTagNumProgressPlot(res, n_epochs, train=True):
+
+    max_v = np.array(res).max(axis=0)
+    max_v = max(max(max_v[0][1:5]), max(max_v[1][1:5]))
+    max_v = np.ceil(max_v)
+    min_v = np.array(res).min(axis=0)
+    min_v = min(min(min_v[0][1:5]), min(min_v[1][1:5]))
+    min_v = np.ceil(min_v)
+
+    if train:
+        names = "train Tag num"
+    else:
+        names = "valid distance"
+
+    pp = ProgressPlot(plot_names=[names],
+                  line_names=["correct", "total"],
+                  x_lim=[0, n_epochs-1], 
+                  y_lim=[min_v, max_v])
+
+    pbar = tqdm(range(min(len(res), n_epochs)))
+    for e in pbar:
+        
+        if train:
+            dis = res[e][0]
+        else:
+            dis = res[e][1]
+    
+        pp.update([[min(dis[1], max_v), 
+                    min(dis[2], max_v), 
+                    min(dis[3], max_v), 
+                    min(dis[4], max_v)]])
+
     pp.finalize()

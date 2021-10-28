@@ -131,15 +131,6 @@ def getTenModel(tag_model, image_model, name = "../SavedModelState/IT_model.ckpt
     except FileNotFoundError:
         print("Can\'t found " + name)
 
-
-def updataProgressPlot(pp, dis, loss_dis_valid, max_v):
-    pp.update([ [min(dis[0], max_v), min(loss_dis_valid[0], max_v), 0, 0],
-                [min(dis[1], max_v), 
-                 min(dis[2], max_v), 
-                 min(dis[3], max_v), 
-                 min(dis[4], max_v)]])
-
-
 def printLossLog(res, n_epochs):
 
     pbar = tqdm(range(min(len(res), n_epochs)))
@@ -163,7 +154,7 @@ def printLossProgressPlot(res, n_epochs):
     pp = ProgressPlot(plot_names=["loss"],
                     line_names=["train", "valid"],
                     x_lim=[0, n_epochs-1], 
-                    y_lim=[min_v, max_v])
+                    y_lim=[0, max_v])
 
     pbar = tqdm(range(min(len(res), n_epochs)))
     for e in pbar:
@@ -192,7 +183,7 @@ def printDistanceProgressPlot(res, n_epochs, train=True):
     pp = ProgressPlot(plot_names=[names],
                   line_names=["pos_IT", "pos_II", "neg_IT", "neg_II"],
                   x_lim=[0, n_epochs-1], 
-                  y_lim=[min_v, max_v])
+                  y_lim=[0, max_v])
 
     pbar = tqdm(range(min(len(res), n_epochs)))
     for e in pbar:
