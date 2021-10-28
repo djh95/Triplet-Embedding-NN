@@ -47,7 +47,7 @@ def get_one_neighbor(dataset, similarity_matrix, dis, maxmal=0.4):
     return indexes
 
 def get_similarity_matrix(tag_list):
-    m = tag_list.clone().detach()
+    m = torch.zeros((tag_list.shape[0],tag_list.shape[0])).to(device)
     for i in range(tag_list.shape[0]):
         for j in range(i,tag_list.shape[0]):
             m[i][j] = similarity_tags(tag_list[i], tag_list[j])

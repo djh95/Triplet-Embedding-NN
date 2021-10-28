@@ -9,7 +9,7 @@ IMAGE_HEIGHT = 224
 IMAGE_WIDTH = 224
 IMAGE_CHANNEL = 3
 
-BATCH_SIZE = 16
+BATCH_SIZE = 48
 WEIGHT_DECAY = 5e-5
 
 
@@ -45,8 +45,8 @@ Image_Path = '../NUS_WID/Flickr/'
 Image_URLs_Path = '../NUS_WID/NUS-WIDE-urls.txt'
 
 Number_Of_Images_All = 269648
-Number_Of_Images_Train = int(161789/BATCH_SIZE) * BATCH_SIZE
-Number_Of_Images_Test = int(107859/BATCH_SIZE) * BATCH_SIZE
+Number_Of_Images_Train = 161789
+Number_Of_Images_Test = 107859
 Number_Of_Images_Valid = 100 * BATCH_SIZE
 
 Word_Vector_Path = '../glove.twitter.27B/glove.twitter.27B.'

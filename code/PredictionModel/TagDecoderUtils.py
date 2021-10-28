@@ -5,21 +5,6 @@ from tqdm.notebook import tqdm
 from Define import *
 from .Utils import *
 
-'''
-train_loader = torch.utils.data.DataLoader(train_data, shuffle=True, batch_size=batch_size)
-valid_loader = torch.utils.data.DataLoader(valid_data, shuffle=False, batch_size=batch_size)
-test_loader = torch.utils.data.DataLoader(test_data, shuffle=False, batch_size=batch_size)
-
-if torch.cuda.is_available():
-    device = torch.device('cuda')
-else:
-    device = torch.device('cpu')
-    
-image_model = TenNet_Image().to(device)
-tag_model = TenNet_Tag(train_data.get_tag_num()).to(device)
-optim = torch.optim.Adam([{'params' : image_model.parameters()}, {'params' : tag_model.parameters()}], lr=0.001)
-'''
-
 def compute_loss(data, expect_res, encoder, decoder, loss_funk):
 
     tag_features = encoder(data)
@@ -51,7 +36,7 @@ def single_epoch_computation(decoder, image_model, tag_model, loader, loss_funk,
 
         loss += batch_loss.item()
         for i in range(output.shape[0]):
-            predicted_tag = get_tag_from_prediction(output, threshold=threshold)
+            predicted_tag = get_tag_from_prediction(output[i], threshold=threshold)
             tag_corr_num = similarity_tags(y_tags[i],predicted_tag) + tag_corr_num
             tag_total_num = predicted_tag.float().sum().item() + tag_total_num 
 
@@ -102,11 +87,13 @@ def output_loss_num(s, loss_num):
             f"loss: {loss_num[0]:.2f},  " +
             f"tag_corr_num: {loss_num[1]:.2f},  " +
             f"tag_total_num: {loss_num[2]:.2f},  " + 
-            f"tag_accuracy: {loss_num[4]:.2f} " )
+            f"tag_accuracy: {loss_num[3]:.2f} " )
     return
 
 def getDecoderModel(decoder, name = "../SavedModelState/decoder_model.ckpt"):
     try:
+        print(name)
+        print("../SavedModelState/decoder_model.ckpt")
         checkpoint = torch.load(name)
         decoder.load_state_dict(checkpoint["model_state_dict"]) 
         epoch = checkpoint['epoch']
@@ -118,30 +105,6 @@ def getDecoderModel(decoder, name = "../SavedModelState/decoder_model.ckpt"):
         print("Can\'t found " + name)
     return
 
-def updataProgressPlot(pp, loss_num_train, loss_num_valid):
-    pp.update([[loss_num_train[0], loss_num_valid[0]], 
-               [loss_num_train[1], loss_num_train[2]], 
-               [loss_num_train[3], loss_num_valid[3]]])
-
-
-
-def printResult(res, n_epochs):
-
-    pbar = tqdm(range(min(len(res), n_epochs)))
-    pp = ProgressPlot(plot_names=["loss", "mean num of tags", "accuracy"], 
-                  line_names=["train/correct", "valid/total"],
-                  x_lim=[0, n_epochs-1], 
-                  y_lim=[[0,50], [0,20], [0,1]])
-
-    for e in pbar:
-
-        loss_num_train =  res[e][0]
-        output_loss_num(f"epoch:{e}: 1-train dataset with train model", loss_num_train)
-        
-        loss_num_valid = res[e][1]   
-        output_loss_num(f"epoch:{e}: 2-valid dataset with evalue model", loss_num_valid)
-    
-        updataProgressPlot(pp, loss_num_train, loss_num_valid)
 
 def printLossLog(res, n_epochs):
 
@@ -175,36 +138,22 @@ def printLossProgressPlot(res, n_epochs):
 
     pp.finalize()
 
-def printTagNumProgressPlot(res, n_epochs, train=True):
+def printTagNumProgressPlot(res, n_epochs):
 
     max_v = np.array(res).max(axis=0)
-    max_v = max(max(max_v[0][1:5]), max(max_v[1][1:5]))
+    max_v = max(max(max_v[0][1:4]), max(max_v[1][1:4]))
     max_v = np.ceil(max_v)
-    min_v = np.array(res).min(axis=0)
-    min_v = min(min(min_v[0][1:5]), min(min_v[1][1:5]))
-    min_v = np.ceil(min_v)
 
-    if train:
-        names = "train Tag num"
-    else:
-        names = "valid distance"
-
-    pp = ProgressPlot(plot_names=[names],
-                  line_names=["correct", "total"],
+    pp = ProgressPlot(plot_names=["Tag num"],
+                  line_names=["correct_t", "total_t", "correct_v", "total_v"],
                   x_lim=[0, n_epochs-1], 
-                  y_lim=[min_v, max_v])
+                  y_lim=[0, max_v])
 
     pbar = tqdm(range(min(len(res), n_epochs)))
+    
     for e in pbar:
         
-        if train:
-            dis = res[e][0]
-        else:
-            dis = res[e][1]
-    
-        pp.update([[min(dis[1], max_v), 
-                    min(dis[2], max_v), 
-                    min(dis[3], max_v), 
-                    min(dis[4], max_v)]])
+        loss_num = res[e]
+        pp.update([[loss_num[0][1], loss_num[0][2], loss_num[1][1], loss_num[1][2]]])
 
     pp.finalize()

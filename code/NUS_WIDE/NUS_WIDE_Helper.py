@@ -81,9 +81,10 @@ class NUS_WIDE_Helper (torch.utils.data.Dataset):
         self.filter_data(rows)
         
         # remain number data
-        if number != -1 and number < self.images_number:
-            rows = random.sample(range(self.images_number), number)
-            self.filter_data(rows)
+        if number == -1 or number > self.images_number or number < 3:
+            number = self.images_number
+        rows = random.sample(range(self.images_number), int(number/BATCH_SIZE) * BATCH_SIZE)
+        self.filter_data(rows)
 
         #self.image_states = np.zeros(self.images_number)
     def filter_data(self, rows):

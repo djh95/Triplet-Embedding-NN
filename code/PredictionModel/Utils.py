@@ -10,13 +10,10 @@ from Define import *
 def get_tag_from_prediction(predictions, threshold=0.5):
     tags = []
     for i in range(predictions.shape[0]):
-        temp_tag = []
-        for j in range(predictions.shape[1]):
-            if predictions[i][j] > threshold:
-                temp_tag.append(1)
-            else:
-                temp_tag.append(0)
-        tags.append(temp_tag)
+        if predictions[i] > threshold:
+            tags.append(1)
+        else:
+            tags.append(0)
     return torch.tensor(tags).to(device)
 
 def similarity_tags(tag1, tag2):
