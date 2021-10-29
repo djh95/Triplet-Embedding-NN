@@ -9,7 +9,7 @@ IMAGE_HEIGHT = 224
 IMAGE_WIDTH = 224
 IMAGE_CHANNEL = 3
 
-BATCH_SIZE = 48
+BATCH_SIZE = 64
 WEIGHT_DECAY = 5e-5
 
 
@@ -19,7 +19,7 @@ Word_Dimensionality = 100
 
 Margin_Distance = Feature_Dimensions * 2 ** 2 
 
-N_Epochs = 30
+N_Epochs = 50
 N_Epochs_Decoder = 30
 
 Threshold = 0.5
