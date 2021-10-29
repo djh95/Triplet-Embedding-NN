@@ -6,11 +6,13 @@ from enum import IntEnum
 from Define import *
 from .Utils import *
 
-def compute_loss(data, expect_res, encoder, decoder, loss_funk):
 
+
+def compute_loss(data, expect_res, encoder, decoder, loss_funk):
     tag_features = encoder(data)
     output = decoder(tag_features)    # get prediction
-    loss = torch.mean(loss_funk(output,expect_res))  # 计算两者的误差
+    loss = loss_funk(output,expect_res.float())  # 计算两者的误差
+    loss = torch.mean(loss)
 
     return loss, output
 
@@ -47,11 +49,11 @@ def single_epoch_computation(decoder, image_model, tag_model, loader, loss_funk,
             optim.step()        # 将参数更新值施加到 net 的 parameters 上
 
         loss += batch_loss.item()
+        tag_total_num += sum(sum(y_tags)).item()
         for i in range(output.shape[0]):
             predicted_tag = get_tag_from_prediction(output[i], threshold=threshold)
             p_tag_corr_num = similarity_tags(y_tags[i],predicted_tag) + p_tag_corr_num
             p_tag_total_num = predicted_tag.float().sum().item() + p_tag_total_num 
-        tag_total_num = sum(sum(y_tags))
 
     loss = loss / len(loader)
     p_tag_corr_num = p_tag_corr_num / len(loader.dataset)
@@ -91,7 +93,7 @@ def predict(decoder, tag_model, image_model,  loader, loss_funk, optim, threshol
             'model_state_dict': decoder.state_dict(),
             'optim_state_dict': optim.state_dict(),
             'loss': res[0],
-            }, "../SavedModelState/decoder_model.ckpt")
+            }, "../SavedModelState/decoder_model_" + str(Margin_Distance) +".ckpt")
             
     return res + (max_accuracy,)
     
@@ -108,7 +110,6 @@ def output_loss_num(s, loss_num):
 def getDecoderModel(decoder, name = "../SavedModelState/decoder_model.ckpt"):
     try:
         print(name)
-        print("../SavedModelState/decoder_model.ckpt")
         checkpoint = torch.load(name)
         decoder.load_state_dict(checkpoint["model_state_dict"]) 
         epoch = checkpoint['epoch']

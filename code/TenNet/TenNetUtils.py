@@ -106,7 +106,7 @@ def evalue(image_model, tag_model, loader, triplet_loss, Lambda, optim, epoch, m
             'tag_model_state_dict': tag_model.state_dict(),
             'optim_state_dict': optim.state_dict(),
             'loss': res[0],
-            }, "../SavedModelState/IT_model.ckpt")
+            }, "../SavedModelState/IT_model_" + str(Margin_Distance) +".ckpt")
             
     return res + (min_loss,)
 

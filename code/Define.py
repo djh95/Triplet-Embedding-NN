@@ -17,7 +17,7 @@ Feature_Dimensions = 1000
 #25 50 100 200
 Word_Dimensionality = 100
 
-Margin_Distance = Feature_Dimensions * 3 ** 2 
+Margin_Distance = Feature_Dimensions * 2 ** 2 
 
 N_Epochs = 30
 N_Epochs_Decoder = 30
