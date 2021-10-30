@@ -201,3 +201,29 @@ def printDistanceProgressPlot(res, n_epochs, train=True):
     pp.finalize()
 
 
+def run(image_model, tag_model, train_loader, valid_loader, triplet_loss, Lambda, n_epochs, test, getTenNetFromFile=False,name="SavedModelState/IT_model.ckpt"):
+    
+    ten_res = []
+    if getTenNetFromFile:
+        getTenModel(tag_model, image_model, name="SavedModelState/IT_model.ckpt")
+    else:
+        pbar = tqdm(range(n_epochs))
+        optim = torch.optim.Adam([{'params' : image_model.parameters()}, {'params' : tag_model.parameters()}], lr=0.0001)
+        min_valid_loss = -1
+
+        for e in pbar:
+        
+            loss_dis_train = train(image_model, tag_model, train_loader, triplet_loss, Lambda, optim)
+            loss_dis_valid = evalue(image_model, tag_model, valid_loader, triplet_loss, Lambda, optim, e, min_valid_loss, True) 
+    
+            print(f"epoch:{e}:")
+            output_loss_dis(f" 1-train dataset train model", loss_dis_train) 
+            output_loss_dis(f" 2-valid dataset evalue model", loss_dis_valid)
+            min_valid_loss = loss_dis_valid[5]
+  
+            ten_res.append([loss_dis_train,loss_dis_valid])
+        
+            if (test or device == torch.device('cpu')) and e == 0:
+                break
+    return ten_res
+        
