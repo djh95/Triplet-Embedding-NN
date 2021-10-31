@@ -145,3 +145,13 @@ def minmaxscaler(data_list):
         data_list[i] = (data_list[i] - dmin)
         data_list[i] = data_list[i] / (dmax-dmin)
     return data_list
+
+def compute_column_maximum(m):
+    res = [i for i in m[0][0]]
+    for i in range(len(m)):
+        for j in range(len(m[0][0])):
+            if m[i][0][j] > res[j]:
+                res[j] = m[i][0][j]
+            if m[i][1][j] > res[j]:
+                res[j] = m[i][1][j]
+    return res

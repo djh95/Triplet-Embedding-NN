@@ -7,7 +7,7 @@ from Define import *
 
 
 class TripletLossFunc(nn.Module): 
-    def __init__(self, alpha = Margin_Distance, hybrid=False, beta=0.1, t1=0, t2=0.02 * Single_Distance * Feature_Dimensions): 
+    def __init__(self, alpha = Margin_Distance, hybrid=False, beta=0.05, t1=0, t2=0.005 * Single_Distance * Feature_Dimensions): 
         super(TripletLossFunc, self).__init__() 
         self.alpha = alpha
         self.t1 = t1

@@ -144,12 +144,7 @@ def printLossLog(res, n_epochs):
 
 def printLossProgressPlot(res, n_epochs):
 
-    max_v = np.array(res).max(axis=0)
-    max_v = max(max_v[0][0], max_v[1][0])
-    max_v = np.ceil(max_v)
-    min_v = np.array(res).min(axis=0)
-    min_v = min(min_v[0][0], min_v[1][0])
-    min_v = np.ceil(min_v)
+    max_v = compute_column_maximum(res)[0]
 
     pp = ProgressPlot(plot_names=["loss"],
                     line_names=["train", "valid"],
@@ -168,12 +163,7 @@ def printLossProgressPlot(res, n_epochs):
 
 def printDistanceProgressPlot(res, n_epochs, train=True):
 
-    max_v = np.array(res).max(axis=0)
-    max_v = max(max(max_v[0][1:5]), max(max_v[1][1:5]))
-    max_v = np.ceil(max_v)
-    min_v = np.array(res).min(axis=0)
-    min_v = min(min(min_v[0][1:5]), min(min_v[1][1:5]))
-    min_v = np.ceil(min_v)
+    max_v = max(compute_column_maximum(res)[1:])
 
     if train:
         names = "train distance"
@@ -193,10 +183,7 @@ def printDistanceProgressPlot(res, n_epochs, train=True):
         else:
             dis = res[e][1]
     
-        pp.update([[min(dis[1], max_v), 
-                    min(dis[2], max_v), 
-                    min(dis[3], max_v), 
-                    min(dis[4], max_v)]])
+        pp.update([[dis[1], dis[2], dis[3], dis[4]]])
 
     pp.finalize()
 
@@ -221,7 +208,7 @@ def run(image_model, tag_model, train_loader, valid_loader, triplet_loss, Lambda
             output_loss_dis(f" 2-valid dataset evalue model", loss_dis_valid)
             min_valid_loss = loss_dis_valid[5]
   
-            ten_res.append([loss_dis_train,loss_dis_valid])
+            ten_res.append([list(loss_dis_train),list(loss_dis_valid)])
         
             if (test or device == torch.device('cpu')) and e == 0:
                 break

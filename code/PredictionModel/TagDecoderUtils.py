@@ -135,8 +135,7 @@ def printLossLog(res, n_epochs):
 
 def printLossProgressPlot(res, n_epochs):
 
-    max_v = np.array(res).max(axis=0)
-    max_v = max(max_v[0][0], max_v[1][0])
+    max_v = compute_column_maximum(res)[0]
     if max_v > 1:
         max_v = np.ceil(max_v)
 
@@ -157,9 +156,7 @@ def printLossProgressPlot(res, n_epochs):
 
 def printTagNumProgressPlot(res, n_epochs):
 
-    max_v = np.array(res).max(axis=0)
-    max_v = max(max(max_v[0][1:4]), max(max_v[1][1:4]))
-    max_v = np.ceil(max_v)
+    max_v = max(compute_column_maximum(res)[1:])
 
     pp = ProgressPlot(plot_names=["Tag num"],
                   line_names=["p_correct_t", "p_total_t", "p_correct_v", "p_total_v", "total"],
