@@ -37,6 +37,7 @@ def single_epoch_computation(decoder, image_model, tag_model, loader, loss_funk,
         if mod == LossModel.PredictModel:
             x_images = x_images.to(device)
             batch_loss, output = compute_loss(x_images, y_tags, image_model, decoder, loss_funk)
+            print(batch_loss, output)
         elif mod == LossModel.DecoderModel:
             batch_loss, output = compute_loss(y_tags, y_tags, tag_model, decoder, loss_funk)
         else:

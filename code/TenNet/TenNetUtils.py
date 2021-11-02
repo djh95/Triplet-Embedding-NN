@@ -36,7 +36,7 @@ def compute_loss(x_images, y_tags, image_model, tag_model, triplet_loss, Lambda 
 
     return loss, dist_image_tag_pos, dist_image_image_pos, dist_image_tag_neg, dist_image_image_neg
 
-def single_epoch_computation(image_model, tag_model, loader, triplet_loss, Lambda, optim, updata):
+def single_epoch_computation(image_model, tag_model, loader, triplet_loss, Lambda, optim=None, updata=False):
     loss = 0
     IT_positive_dis = 0
     II_positive_dis = 0
@@ -213,4 +213,14 @@ def run(image_model, tag_model, train_loader, valid_loader, triplet_loss, Lambda
             if (test or device == torch.device('cpu')) and e == 0:
                 break
     return ten_res
+
+def test(image_model, tag_model, loader, triplet_loss, Lambda):
+    image_model.eval()
+    tag_model.eval()
+
+    with torch.no_grad():
+        res = single_epoch_computation(image_model, tag_model, loader, triplet_loss, Lambda, updata=False)
+        output_loss_dis("test result:", res)
+    return res
+
         
