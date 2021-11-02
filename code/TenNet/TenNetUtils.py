@@ -192,7 +192,7 @@ def run(image_model, tag_model, train_loader, valid_loader, triplet_loss, Lambda
     
     ten_res = []
     if getTenNetFromFile:
-        getTenModel(tag_model, image_model, name="SavedModelState/IT_model.ckpt")
+        getTenModel(tag_model, image_model, name=name)
     else:
         pbar = tqdm(range(n_epochs))
         optim = torch.optim.Adam([{'params' : image_model.parameters()}, {'params' : tag_model.parameters()}], lr=0.0001)

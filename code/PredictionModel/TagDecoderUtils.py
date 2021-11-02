@@ -22,6 +22,7 @@ class LossModel (IntEnum):
     # image -> feature ->tag
     PredictModel = 1
     HybridModel = 2
+    HybridModel2 = 3
 
 def single_epoch_computation(decoder, image_model, tag_model, loader, loss_funk, optim, threshold, updata=True, mod=LossModel.PredictModel):
     loss = 0
@@ -72,7 +73,7 @@ def train(decoder, tag_model, image_model,  loader, loss_funk, optim, threshold=
     tag_model.eval()
     image_model.eval()
     decoder.train()
-    
+
     res = single_epoch_computation(decoder, image_model, tag_model, loader, loss_funk, optim, threshold, updata=True, mod=mod)
 
     return res
@@ -198,9 +199,16 @@ def run(model, mod, tag_model, image_model, train_loader, valid_loader, loss_fun
         pbar = tqdm(range(n_epochs))
 
     for e in pbar:
-    
-        loss_num_train = train(model, tag_model, image_model, train_loader, loss_funk, optim, threshold, mod=mod)
-        output_loss_num(f"epoch:{e}: 1-train dataset with train model", loss_num_train)
+
+        
+        if mod == LossModel.HybridModel2:
+            loss_num_train = train(model, tag_model, image_model, train_loader, loss_funk, optim, threshold, mod=LossModel.DecoderModel)
+            output_loss_num(f"epoch:{e}: 1-train dataset with train model", loss_num_train)
+            loss_num_train = train(model, tag_model, image_model, train_loader, loss_funk, optim, threshold, mod=LossModel.PredictModel)
+            output_loss_num(f"epoch:{e}: 1-train dataset with train model", loss_num_train)
+        else:
+            loss_num_train = train(model, tag_model, image_model, train_loader, loss_funk, optim, threshold, mod=mod)
+            output_loss_num(f"epoch:{e}: 1-train dataset with train model", loss_num_train)
         
         loss_num_valid = predict(model, tag_model, image_model, valid_loader, loss_funk, optim, threshold, True, max_accuracy, e)   
         output_loss_num(f"epoch:{e}: 2-valid dataset with evalue model", loss_num_valid)
