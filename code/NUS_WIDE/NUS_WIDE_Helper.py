@@ -24,6 +24,7 @@ class NUS_WIDE_Helper (torch.utils.data.Dataset):
     tag_list = []
     image_tags = []
     image_list = []
+
     
     def __init__(self, data_set_type, number = -1, min_tag_num = 3):
         super().__init__() 
@@ -69,10 +70,14 @@ class NUS_WIDE_Helper (torch.utils.data.Dataset):
         self.image_list = np.loadtxt(self.image_list_path, dtype=str)
         self.images_number = len(self.image_tags)
 
+        self.tag_num_statistic = [0 for i in range(len(self.tag_list))]
+
         # remain the data with at least min_tag_num tags
         rows = []
         for i in range(self.images_number):
-            if np.sum(self.image_tags[i]) >= min_tag_num:
+            tn = int(np.sum(self.image_tags[i]))
+            self.tag_num_statistic[tn] = self.tag_num_statistic[tn] + 1
+            if tn >= min_tag_num:
                 try:
                     cv2.imread(self.get_image_path(self.image_list[i])).shape
                 except:
@@ -129,3 +134,6 @@ class NUS_WIDE_Helper (torch.utils.data.Dataset):
 
     def __len__(self):
         return len(self.image_list)
+
+    def get_tag_num_statistic(self):
+        return self.tag_num_statistic

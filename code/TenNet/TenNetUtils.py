@@ -223,4 +223,79 @@ def test(image_model, tag_model, loader, triplet_loss, Lambda):
         output_loss_dis("test result:", res)
     return res
 
-        
+def select_k_tags(data, image_model, tag_model, k):
+    res = []
+
+    def firstV(d):
+        return d[0]
+
+    image_features, tags_features = compute_feature(data, image_model, tag_model)
+
+    for i in range(data.images_number):
+        temp = []
+        for j in range(data.images_number):
+            dis = torch.sum(torch.square(image_features[i] - tags_features[j]))
+            temp.append([dis, k])
+            temp.sort(key=firstV)
+            if len(temp) > k:
+                temp = temp[0:k]
+        res_i = [d[1] for d in temp]
+        res.append(res_i)
+    return res
+
+def compute_feature(data, image_model, tag_model):
+    res = None
+    loader = torch.utils.data.DataLoader(data, shuffle=False, batch_size=BATCH_SIZE)
+    for (x_images,y_tags) in loader:
+
+        x_images, y_tags = x_images.to(device), y_tags.to(device)    
+        image_features = image_model(x_images)
+        tag_features = tag_model(y_tags)
+        if res == None:
+            res = [image_features, tag_features]
+        else:
+            res[0] = torch.cat((res[0], image_features), 0)
+            res[1] = torch.cat((res[1], tag_features), 0)
+    return res[0], res[1]
+
+def evalue_single(tag_v, ground_truth_tag_v):
+    tp = similarity_tags(tag_v, ground_truth_tag_v)
+    fp = sum(tag_v) - tp
+    fn = sum(ground_truth_tag_v) - tp
+    tn = len(tag_v) - sum(tag_v) - fn
+    # p = tp / sum(tag_v)
+    p = tp / (tp+fp)
+    # r = tp / sum(ground_truth_tag_v)
+    r = tp / (tp+fn)
+    f1 = 2 * p * r / (p+r)
+    c = (tp+tn) / (tp+tn+fp+fn)
+    return p, r, f1, c
+
+def evalue(data, image_model, tag_model, k=3):
+    image_model.eval()
+    tag_model.eval()
+
+    precision = 0
+    recall = 0
+    F1 = 0
+    accuracy = 0
+
+    k_tags = select_k_tags(data, image_model, tag_model,k)
+    tag_matrix = get_tag_vectors(k_tags, len(data.tag_list))
+
+    for i in range(data.images_number):
+
+        res = evalue_single(tag_matrix[i], data.image_tags[i])
+
+        precision = precision + res[0]
+        recall = recall + res[1]
+        F1 = F1 + res[2]
+        accuracy = accuracy + res[3]
+
+    num = data.images_number
+    precision = precision / num
+    recall = recall / num
+    F1 = F1 / num
+    accuracy = accuracy / num
+    return precision, recall, F1, accuracy
+

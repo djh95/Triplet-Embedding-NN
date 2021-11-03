@@ -7,17 +7,20 @@ import os
 
 from Define import *
 
-def one_hot(indexes, n):
-    vector = np.zeros(n, dtype = np.float32)
-    vector[indexes] = 1.
+def get_tag_vector(indexes, n):
+    vector = torch.zeros((1,n))
+    vector[0][indexes] = 1
     return vector
 
-def my_one_hot(tag):
-    n = len(tag)
-    vector = np.zeros((n, n), dtype = np.float32)
-    for i in range(n):
-        vector[i,i] = tag[i]
-    return vector
+def get_tag_vectors(indexes_list, n):
+    res = None
+    for i in range(len(indexes_list)):
+        temp = get_tag_vector(indexes_list[i], n)
+        if res == None:
+            res = temp
+        else:
+            res = torch.cat((res,temp),0)
+    return res
 
 # For each node in dataset, find a neighbor from dataset, such that the distance between them is less than dis. Maxmal check n*maxmal times
 def get_one_neighbor(dataset, similarity_matrix, dis, maxmal=0.4):
