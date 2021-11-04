@@ -26,7 +26,7 @@ class NUS_WIDE_Helper (torch.utils.data.Dataset):
     image_list = []
 
     
-    def __init__(self, data_set_type, number = -1, min_tag_num = 3):
+    def __init__(self, data_set_type, number=-1, min_tag_num=2):
         super().__init__() 
 
         if (data_set_type % 3) == 0:

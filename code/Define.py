@@ -9,13 +9,13 @@ IMAGE_HEIGHT = 224
 IMAGE_WIDTH = 224
 IMAGE_CHANNEL = 3
 
-BATCH_SIZE = 32
+BATCH_SIZE = 48
 WEIGHT_DECAY = 5e-5
 
 
 Feature_Dimensions = 1000
 #25 50 100 200
-Word_Dimensions = 100
+Word_Dimensions = 256
 
 Single_Distance = 1
 Margin_Distance = Feature_Dimensions * (Single_Distance ** 2)
