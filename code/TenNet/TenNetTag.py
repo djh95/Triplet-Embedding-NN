@@ -9,15 +9,17 @@ from .Utils import *
 
 
 class TenNet_Tag(nn.Module): # input batchSize * 1 * tagNum * tagNum
-    def __init__(self, vocabulary_list, dropout_probability=0.3):
+    def __init__(self, vocabulary_list, dropout_probability=0.3, in_channel=1, additional_matrix=None):
         super().__init__()
         
         self.Feature_Dimensions = Feature_Dimensions
         self.VOCAB_SIZE = len(vocabulary_list)
-        self.WORD_DIM = Word_Dimensionality 
+        self.WORD_DIM = Word_Dimensions
         self.DROPOUT_PROB = dropout_probability
-        self.IN_CHANNEL = 1
-        self.WV_MATRIX = get_word_vector_matrix(vocabulary_list, self.WORD_DIM)
+        self.IN_CHANNEL = in_channel
+        if self.IN_CHANNEL == 2:
+            self.WV_MATRIX = additional_matrix
+            #self.WV_MATRIX = get_word_vector_matrix_glove(vocabulary_list, self.WORD_DIM)
 
         # one for UNK and one for zero padding
         self.embedding_unstatic = nn.Embedding(self.VOCAB_SIZE, self.WORD_DIM)

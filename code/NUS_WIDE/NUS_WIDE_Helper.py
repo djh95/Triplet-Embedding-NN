@@ -97,7 +97,7 @@ class NUS_WIDE_Helper (torch.utils.data.Dataset):
         self.image_list = [self.image_list[i] for i in rows]
         self.images_number = len(self.image_tags)
     
-    def get_image(self, image_name):
+    def get_image_by_name(self, image_name):
         
         image = cv2.imread(self.get_image_path(image_name))
         image = DataAugmentation(image)
@@ -129,8 +129,11 @@ class NUS_WIDE_Helper (torch.utils.data.Dataset):
     def get_image_name(self, index):
         return self.image_list[index]
 
+    def get_image(self, index):
+        return torch.from_numpy(self.get_image_by_name(self.get_image_name(index))) / 255.0
+
     def __getitem__(self, index):
-        return torch.from_numpy(self.get_image(self.get_image_name(index))) / 255.0, torch.from_numpy(self.get_tag(index))
+        return torch.from_numpy(self.get_image_by_name(self.get_image_name(index))) / 255.0, torch.from_numpy(self.get_tag(index))
 
     def __len__(self):
         return len(self.image_list)

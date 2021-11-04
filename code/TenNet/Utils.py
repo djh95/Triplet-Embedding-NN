@@ -8,18 +8,16 @@ import os
 from Define import *
 
 def get_tag_vector(indexes, n):
-    vector = torch.zeros((1,n))
-    vector[0][indexes] = 1
+    vector = [False for i in range(n)]
+    for i in indexes:
+        vector[i] = True
     return vector
 
 def get_tag_vectors(indexes_list, n):
-    res = None
+    res = []
     for i in range(len(indexes_list)):
         temp = get_tag_vector(indexes_list[i], n)
-        if res == None:
-            res = temp
-        else:
-            res = torch.cat((res,temp),0)
+        res.append(temp)
     return res
 
 # For each node in dataset, find a neighbor from dataset, such that the distance between them is less than dis. Maxmal check n*maxmal times
@@ -88,7 +86,7 @@ def get_pos_neg(tag_list, similarity_matrix, maxmal=0.4):
 
 
 def similarity_tags(tag1, tag2):
-    return len(torch.nonzero(tag1 * tag2))
+    return len(torch.nonzero(torch.tensor(tag1 * tag2)))
 
 # word_vectors: batch * tag_num of the image * word dimensionalities
 # return: batch * tag_size * word dim
@@ -109,7 +107,7 @@ def get_multy_tag_indexes(tags):
         indexes.append([j for j in range(tags.shape[1]) if tags[i][j] == 1])
     return indexes
 
-def get_word_vector_matrix(vocabulary_list, dimensions):
+def get_word_vector_matrix_glove(vocabulary_list, dimensions):
     
     matrix_path = Processed_Word_Matrix_Path + str(dimensions) + ".txt"
 

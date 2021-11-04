@@ -76,7 +76,7 @@ def train(image_model, tag_model, loader, triplet_loss, Lambda, optim, updata=Tr
 
     return res
 
-def evalue2(image_model, tag_model, loader, triplet_loss, Lambda, optim):
+def validate2(image_model, tag_model, loader, triplet_loss, Lambda, optim):
     
     image_model.eval()
     tag_model.eval()
@@ -84,13 +84,13 @@ def evalue2(image_model, tag_model, loader, triplet_loss, Lambda, optim):
     res = single_epoch_computation(image_model, tag_model, loader, triplet_loss, Lambda, optim, updata=False)
     return res
 
-def evalue3(image_model, tag_model, loader, triplet_loss, Lambda, optim):
+def validate3(image_model, tag_model, loader, triplet_loss, Lambda, optim):
 
     with torch.no_grad():
         res = single_epoch_computation(image_model, tag_model, loader, triplet_loss, Lambda, optim, updata=False)
     return res
 
-def evalue(image_model, tag_model, loader, triplet_loss, Lambda, optim, epoch, min_loss, save_best=True):
+def validate(image_model, tag_model, loader, triplet_loss, Lambda, optim, epoch, min_loss, save_best=True):
     
     image_model.eval()
     tag_model.eval()
@@ -201,7 +201,7 @@ def run(image_model, tag_model, train_loader, valid_loader, triplet_loss, Lambda
         for e in pbar:
         
             loss_dis_train = train(image_model, tag_model, train_loader, triplet_loss, Lambda, optim)
-            loss_dis_valid = evalue(image_model, tag_model, valid_loader, triplet_loss, Lambda, optim, e, min_valid_loss, True) 
+            loss_dis_valid = validate(image_model, tag_model, valid_loader, triplet_loss, Lambda, optim, e, min_valid_loss, True) 
     
             print(f"epoch:{e}:")
             output_loss_dis(f" 1-train dataset train model", loss_dis_train) 
@@ -229,13 +229,18 @@ def select_k_tags(data, image_model, tag_model, k):
     def firstV(d):
         return d[0]
 
-    image_features, tags_features = compute_feature(data, image_model, tag_model)
+    tag_features = compute_single_tag_feature(tag_model, len(data.tag_list))
 
     for i in range(data.images_number):
         temp = []
-        for j in range(data.images_number):
-            dis = torch.sum(torch.square(image_features[i] - tags_features[j]))
-            temp.append([dis, k])
+        image_i = data.get_image(i)
+        image_i = image_i.unsqueeze(0)
+        image_i = image_i.to(device)
+        image_features_i = image_model(image_i)
+
+        for j in range(len(data.tag_list)):
+            dis = torch.sum(torch.square(image_features_i - tag_features[j]))
+            temp.append([dis, j])
             temp.sort(key=firstV)
             if len(temp) > k:
                 temp = temp[0:k]
@@ -243,20 +248,19 @@ def select_k_tags(data, image_model, tag_model, k):
         res.append(res_i)
     return res
 
-def compute_feature(data, image_model, tag_model):
-    res = None
-    loader = torch.utils.data.DataLoader(data, shuffle=False, batch_size=BATCH_SIZE)
-    for (x_images,y_tags) in loader:
+def compute_single_tag_feature(tag_model, n):
+    tag_feature = None
 
-        x_images, y_tags = x_images.to(device), y_tags.to(device)    
-        image_features = image_model(x_images)
-        tag_features = tag_model(y_tags)
-        if res == None:
-            res = [image_features, tag_features]
+    for i in range(n):
+        y_tags = torch.zeros((1,Word_Dimensions)) 
+        y_tags[0][i] = 1
+        y_tags = y_tags.to(device)   
+        fea = tag_model(y_tags)
+        if tag_feature == None:
+            tag_feature = fea
         else:
-            res[0] = torch.cat((res[0], image_features), 0)
-            res[1] = torch.cat((res[1], tag_features), 0)
-    return res[0], res[1]
+            tag_feature = torch.cat((tag_feature, fea), 0)
+    return tag_feature
 
 def evalue_single(tag_v, ground_truth_tag_v):
     tp = similarity_tags(tag_v, ground_truth_tag_v)
@@ -267,7 +271,10 @@ def evalue_single(tag_v, ground_truth_tag_v):
     p = tp / (tp+fp)
     # r = tp / sum(ground_truth_tag_v)
     r = tp / (tp+fn)
-    f1 = 2 * p * r / (p+r)
+    if p == 0 and r == 0:
+        f1 = 0
+    else:
+        f1 = 2 * p * r / (p+r)
     c = (tp+tn) / (tp+tn+fp+fn)
     return p, r, f1, c
 
@@ -297,5 +304,9 @@ def evalue(data, image_model, tag_model, k=3):
     recall = recall / num
     F1 = F1 / num
     accuracy = accuracy / num
+    print(  f"precision: {precision:.4f},  " +
+            f"recall: {recall:.4f},  " +
+            f"F1: {F1:.4f},  " + 
+            f"accuracy: {accuracy:.4f}." )
     return precision, recall, F1, accuracy
 
