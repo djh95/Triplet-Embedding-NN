@@ -195,7 +195,7 @@ def run(image_model, tag_model, train_loader, valid_loader, triplet_loss, Lambda
         getTenModel(tag_model, image_model, name=name)
     else:
         pbar = tqdm(range(n_epochs))
-        optim = torch.optim.Adam([{'params' : image_model.parameters()}, {'params' : tag_model.parameters()}], lr=0.0001)
+        optim = torch.optim.RMSprop([{'params' : image_model.parameters()}, {'params' : tag_model.parameters()}], lr=0.0003, alpha=0.99, eps=1e-08, weight_decay=0, momentum=0, centered=False)
         min_valid_loss = -1
 
         for e in pbar:
