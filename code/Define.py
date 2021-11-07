@@ -20,8 +20,8 @@ Word_Dimensions = 256
 Single_Distance = 1
 Margin_Distance = Feature_Dimensions * (Single_Distance ** 2)
 
-N_Epochs = 50
-N_Epochs_Decoder = 30
+N_Epochs = 20
+N_Epochs_Decoder = 20
 
 Threshold = 0.5
 

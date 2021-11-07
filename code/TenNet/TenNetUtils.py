@@ -188,18 +188,23 @@ def printDistanceProgressPlot(res, n_epochs, train=True):
     pp.finalize()
 
 
-def run(image_model, tag_model, train_loader, valid_loader, triplet_loss, Lambda, n_epochs, test, getTenNetFromFile=False,name="SavedModelState/IT_model.ckpt"):
+def run(image_model, tag_model, train_loader, valid_loader, triplet_loss, n_epochs, test, getTenNetFromFile=False,name="SavedModelState/IT_model.ckpt"):
     
     ten_res = []
     if getTenNetFromFile:
         getTenModel(tag_model, image_model, name=name)
     else:
         pbar = tqdm(range(n_epochs))
-        optim = torch.optim.RMSprop([{'params' : image_model.parameters()}, {'params' : tag_model.parameters()}], lr=0.0003, alpha=0.99, eps=1e-08, weight_decay=0, momentum=0, centered=False)
+        lr = 0.004
+        Lambda = 0.01
         min_valid_loss = -1
-
+        optimizer = torch.optim.RMSprop([{'params' : image_model.parameters()}, {'params' : tag_model.parameters()}], lr=lr, alpha=0.99, eps=1e-08, weight_decay=0, momentum=0, centered=False)
+        scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma = 0.85, last_epoch=-1)
         for e in pbar:
-        
+            
+            scheduler.step()
+            Lambda = min(Lambda * 1.2, 0.1)
+
             loss_dis_train = train(image_model, tag_model, train_loader, triplet_loss, Lambda, optim)
             loss_dis_valid = validate(image_model, tag_model, valid_loader, triplet_loss, Lambda, optim, e, min_valid_loss, True) 
     
