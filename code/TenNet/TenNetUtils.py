@@ -201,12 +201,12 @@ def run(image_model, tag_model, train_loader, valid_loader, triplet_loss, n_epoc
         optimizer = torch.optim.RMSprop([{'params' : image_model.parameters()}, {'params' : tag_model.parameters()}], lr=lr, alpha=0.99, eps=1e-08, weight_decay=0, momentum=0, centered=False)
         scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma = 0.85, last_epoch=-1)
         for e in pbar:
-            
+
             scheduler.step()
             Lambda = min(Lambda * 1.2, 0.1)
 
-            loss_dis_train = train(image_model, tag_model, train_loader, triplet_loss, Lambda, optim)
-            loss_dis_valid = validate(image_model, tag_model, valid_loader, triplet_loss, Lambda, optim, e, min_valid_loss, True) 
+            loss_dis_train = train(image_model, tag_model, train_loader, triplet_loss, Lambda, optimizer)
+            loss_dis_valid = validate(image_model, tag_model, valid_loader, triplet_loss, Lambda, optimizer, e, min_valid_loss, True) 
     
             print(f"epoch:{e}:")
             output_loss_dis(f" 1-train dataset train model", loss_dis_train) 
@@ -269,8 +269,10 @@ def compute_single_tag_feature(tag_model, n):
 
 def evalue_single(tag_v, ground_truth_tag_v):
     tp = similarity_tags(tag_v, ground_truth_tag_v)
-    fp = sum(tag_v) - tp
-    fn = sum(ground_truth_tag_v) - tp
+    sum_p = sum(tag_v)
+    fp = sum_p - tp
+    sum_g = sum(ground_truth_tag_v)
+    fn = sum_g - tp
     tn = len(tag_v) - sum(tag_v) - fn
     # p = tp / sum(tag_v)
     p = tp / (tp+fp)
@@ -281,7 +283,7 @@ def evalue_single(tag_v, ground_truth_tag_v):
     else:
         f1 = 2 * p * r / (p+r)
     c = (tp+tn) / (tp+tn+fp+fn)
-    return p, r, f1, c
+    return p, r, f1, c, tp, sum_p, sum_g
 
 def evalue(data, image_model, tag_model, k=3):
     image_model.eval()
@@ -291,6 +293,9 @@ def evalue(data, image_model, tag_model, k=3):
     recall = 0
     F1 = 0
     accuracy = 0
+    tp = 0
+    sum_p = 0
+    sum_g = 0
 
     k_tags = select_k_tags(data, image_model, tag_model,k)
     tag_matrix = get_tag_vectors(k_tags, len(data.tag_list))
@@ -303,15 +308,26 @@ def evalue(data, image_model, tag_model, k=3):
         recall = recall + res[1]
         F1 = F1 + res[2]
         accuracy = accuracy + res[3]
+        tp = tp + res[4]
+        sum_p = sum_p + res[5]
+        sum_g = sum_g + res[6]
 
     num = data.images_number
     precision = precision / num
     recall = recall / num
     F1 = F1 / num
     accuracy = accuracy / num
-    print(  f"precision: {precision:.4f},  " +
-            f"recall: {recall:.4f},  " +
+    tp = tp / num
+    sum_p = sum_p / num
+    sum_g = sum_g / num
+    print( "Evaluate result:")
+    print(  f"Precision: {precision:.4f},  " +
+            f"Recall: {recall:.4f},  " +
             f"F1: {F1:.4f},  " + 
-            f"accuracy: {accuracy:.4f}." )
-    return precision, recall, F1, accuracy
+            f"Accuracy: {accuracy:.4f}." )
+    print( "Average number of tags")
+    print(  f"True positive: {tp:.2f},  " +
+            f"Positive tags in prediction: {sum_p:.2f},  " +
+            f"Positive tags in ground truth: {sum_g:.2f}." )
+    return precision, recall, F1, accuracy, tp, sum_p, sum_g
 

@@ -8,7 +8,7 @@ from .Inception import *
 from .Utils import *
 
 class TenNet_Tag_V2(nn.Module): # input batchSize * 1 * tagNum * tagNum
-    def __init__(self, vocabulary_list, dropout_probability=0.3, in_channel=1, additional_matrix=None):
+    def __init__(self, vocabulary_list, dropout_probability=0.3, in_channel=2, additional_matrix=None):
         super().__init__()
         
         self.Feature_Dimensions = Feature_Dimensions
@@ -16,17 +16,14 @@ class TenNet_Tag_V2(nn.Module): # input batchSize * 1 * tagNum * tagNum
         self.WORD_DIM = Word_Dimensions
         self.DROPOUT_PROB = dropout_probability
         self.IN_CHANNEL = in_channel
-        if self.IN_CHANNEL == 2:
-            self.WV_MATRIX = additional_matrix
-            #self.WV_MATRIX = get_word_vector_matrix_glove(vocabulary_list, self.WORD_DIM)
 
-        # one for UNK and one for zero padding
         self.embedding_unstatic = nn.Embedding(self.VOCAB_SIZE, self.WORD_DIM)
         self.embedding_static = nn.Embedding(self.VOCAB_SIZE, self.WORD_DIM)
-        if len(self.WV_MATRIX) == self.VOCAB_SIZE:
+
+        if self.IN_CHANNEL == 2:
+            self.WV_MATRIX = additional_matrix
             self.embedding_static.weight.data.copy_(torch.from_numpy(np.asarray(self.WV_MATRIX)))
-            self.embedding_static.weight.requires_grad = False
-            self.IN_CHANNEL = 2               
+            self.embedding_static.weight.requires_grad = False           
 
  
         self.model = MyInception_81()
@@ -45,9 +42,8 @@ class TenNet_Tag_V2(nn.Module): # input batchSize * 1 * tagNum * tagNum
                 index_i =  torch.from_numpy(np.asarray(indexes[i]).astype(np.int32))
                 for j in range(index_i.shape[0]):
                     x2[i][0][index_i[j]] = self.embedding_unstatic.weight[index_i[j]]
-            #x2 = self.embedding_static(indexes)
-            #x2 = extend(x2, self.Feature_Dimensions).view(-1, 1, self.VOCAB_SIZE, self.WORD_DIM)
             x = torch.cat((x, x2), 1)
+
         # 81 x 256 x 2
         out = self.model(x)
         return out
