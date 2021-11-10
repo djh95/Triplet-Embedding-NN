@@ -76,20 +76,6 @@ def train(image_model, tag_model, loader, triplet_loss, Lambda, optim, updata=Tr
 
     return res
 
-def validate2(image_model, tag_model, loader, triplet_loss, Lambda, optim):
-    
-    image_model.eval()
-    tag_model.eval()
-
-    res = single_epoch_computation(image_model, tag_model, loader, triplet_loss, Lambda, optim, updata=False)
-    return res
-
-def validate3(image_model, tag_model, loader, triplet_loss, Lambda, optim):
-
-    with torch.no_grad():
-        res = single_epoch_computation(image_model, tag_model, loader, triplet_loss, Lambda, optim, updata=False)
-    return res
-
 def validate(image_model, tag_model, loader, triplet_loss, Lambda, optim, epoch, min_loss, save_best=True):
     
     image_model.eval()
@@ -195,15 +181,15 @@ def run(image_model, tag_model, train_loader, valid_loader, triplet_loss, n_epoc
         getTenModel(tag_model, image_model, name=name)
     else:
         pbar = tqdm(range(n_epochs))
-        lr = 0.004
-        Lambda = 0.01
+        lr = 0.0003
+        Lambda = 0.005
         min_valid_loss = -1
         optimizer = torch.optim.RMSprop([{'params' : image_model.parameters()}, {'params' : tag_model.parameters()}], lr=lr, alpha=0.99, eps=1e-08, weight_decay=0, momentum=0, centered=False)
-        scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma = 0.85, last_epoch=-1)
+        scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma = 0.9, last_epoch=-1)
         for e in pbar:
 
             scheduler.step()
-            Lambda = min(Lambda * 1.2, 0.1)
+            Lambda = min(Lambda * 1.5, 0.1)
 
             loss_dis_train = train(image_model, tag_model, train_loader, triplet_loss, Lambda, optimizer)
             loss_dis_valid = validate(image_model, tag_model, valid_loader, triplet_loss, Lambda, optimizer, e, min_valid_loss, True) 

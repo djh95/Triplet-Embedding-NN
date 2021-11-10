@@ -107,6 +107,8 @@ def get_multy_tag_indexes(tags):
         indexes.append([j for j in range(tags.shape[1]) if tags[i][j] == 1])
     return indexes
 
+
+
 def get_word_vector_matrix_glove(vocabulary_list, dimensions):
     
     matrix_path = Processed_Word_Matrix_Path + str(dimensions) + ".txt"

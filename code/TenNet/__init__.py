@@ -3,3 +3,4 @@ from .TenNetImage import *
 from .TenNetTag import *
 from .TenNetUtils import *
 from .Utils import *
+from .SCNN import *

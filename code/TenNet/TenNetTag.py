@@ -98,6 +98,8 @@ class TenNet_Tag(nn.Module): # input batchSize * 1 * tagNum * tagNum
         )
 
     def forward(self, tags):
+        #input n * 2 * 81 * 256
+        #output  n * 1000
         indexes = get_multy_tag_indexes(tags)
         x = torch.zeros((tags.shape[0],1,self.VOCAB_SIZE, self.WORD_DIM)).to(device)
         for i in range(len(indexes)):
