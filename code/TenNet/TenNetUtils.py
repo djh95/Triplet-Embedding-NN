@@ -77,7 +77,7 @@ def train(image_model, tag_model, loader, triplet_loss, Lambda, optim, updata=Tr
 
     return res
 
-def validate(image_model, tag_model, loader, triplet_loss, Lambda, optim, epoch, min_loss, save_best=True):
+def validate(image_model, tag_model, loader, triplet_loss, Lambda, optim, epoch, min_loss, save_best=True, name="../SavedModelState/IT_model_" + str(Margin_Distance) +".ckpt"):
     
     image_model.eval()
     tag_model.eval()
@@ -87,7 +87,6 @@ def validate(image_model, tag_model, loader, triplet_loss, Lambda, optim, epoch,
 
     if save_best and (min_loss == -1 or min_loss > res[0]):
         min_loss = res[0]
-        name = "../SavedModelState/IT_model_" + str(Margin_Distance) +".ckpt"
         save_TenNet(image_model, tag_model, optim, epoch, loss=min_loss, name=name)
     return res + (min_loss,)
 
@@ -178,7 +177,7 @@ def printDistanceProgressPlot(res, n_epochs, train=True):
 
     pp.finalize()
 
-def run(image_model, tag_model, train_loader, valid_loader, triplet_loss, lr = 0.001, gamma = 0.9, n_epochs=10, print_log = True,Lambda = 0.1):
+def run(image_model, tag_model, train_loader, valid_loader, triplet_loss, lr = 0.001, gamma = 0.9, name="../SavedModelState/IT_model_" + str(Margin_Distance) +".ckpt", n_epochs=10, print_log = True,Lambda = 0.1):
     
     ten_res = []
 
@@ -190,10 +189,10 @@ def run(image_model, tag_model, train_loader, valid_loader, triplet_loss, lr = 0
     scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma = gamma, last_epoch=-1)
     for e in pbar:
         scheduler.step()
-        #Lambda = min(Lambda * 1.5, 0.1)
+        Lambda = min(Lambda * 1.5, 0.1)
         loss_dis_train = train(image_model, tag_model, train_loader, triplet_loss, Lambda, optimizer)
-        loss_dis_valid = validate(image_model, tag_model, valid_loader, triplet_loss, Lambda, optimizer, e, min_valid_loss, True) 
-
+        loss_dis_valid = validate(image_model, tag_model, valid_loader, triplet_loss, Lambda, optimizer, e, min_valid_loss, True, name=name) 
+        evalue(valid_loader.dataset, image_model, tag_model, k=3)
         if print_log:
             print(f"epoch:{e}:")
             output_loss_dis(f" 1-train dataset train model", loss_dis_train) 

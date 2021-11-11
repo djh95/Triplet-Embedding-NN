@@ -79,8 +79,7 @@ class TenNet_Tag_s1(nn.Module): # input batchSize * 1 * tagNum * tagNum
 
         if self.IN_CHANNEL == 2:
             x2 = self.embedding_static(index_list).view(-1,1,self.VOCAB_SIZE,self.WORD_DIM)
-            x = torch.cat((x, x2), 1)
-            
+            x = torch.cat((x, x2), 1)    
         out = [self.pooling(conv(x)).view(tagsets.shape[0], -1)  for conv in self.branches]
         out = torch.cat(out, 1)
         out = self.fc(out)
