@@ -48,7 +48,11 @@ class TenNet_Tag_s1(nn.Module): # input batchSize * 1 * tagNum * tagNum
         
         self.fc = nn.Sequential( 
             nn.Dropout(p=dropout_probability, inplace=False),
-            nn.Linear(sum(self.FILTER_NUM), out_features=self.Feature_Dimensions, bias=True)
+            nn.Linear(sum(self.FILTER_NUM), out_features=2048, bias=True),
+            nn.BatchNorm1d(2048),
+            nn.ReLU(inplace=True),
+            nn.Dropout(p=dropout_probability, inplace=False),
+            nn.Linear(in_features=2048, out_features=self.Feature_Dimensions, bias=True),
             )
         
 

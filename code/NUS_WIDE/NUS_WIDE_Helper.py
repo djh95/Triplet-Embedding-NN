@@ -102,7 +102,7 @@ class NUS_WIDE_Helper (torch.utils.data.Dataset):
         image = cv2.imread(self.get_image_path(image_name))
         image = DataAugmentation(image)
         image = cv2.resize(image, (IMAGE_WIDTH, IMAGE_HEIGHT))
-        image = image.reshape(3,IMAGE_WIDTH, IMAGE_HEIGHT)
+        image = image.transpose(2,1,0)
         image = image.astype(np.float32)
         return image
 

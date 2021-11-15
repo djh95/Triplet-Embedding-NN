@@ -3,6 +3,17 @@ import random
 
 import numpy as np
 
+
+def expansion(image):
+    h, w, c = image.shape
+    if h > w:
+        image = cv2.copyMakeBorder(image,0,0,0,h-w,cv2.BORDER_CONSTANT, value=[0,0,0])
+    elif h < w:
+        image = cv2.copyMakeBorder(image,0,w-h,0,0,cv2.BORDER_CONSTANT, value=[0,0,0])
+
+    return image
+
+
 # prob = 50%
 def random_flip(image, condition = [False, True]):
     if random.choice(condition):
@@ -93,12 +104,13 @@ def random_crop(image, condition = [False, False, False, True]):
     return image
 
 def DataAugmentation(image):
-    image = random_flip(image)
     image = random_scale(image)
+    image = expansion(image)
+    image = random_flip(image)
     image = random_blur(image)
     image = random_brightness(image)
     image = random_saturation(image)
-    # image = random_gray(image)
+    image = random_gray(image)
     image = random_crop(image)
 
     return image

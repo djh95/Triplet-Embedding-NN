@@ -21,7 +21,7 @@ def get_tag_vectors(indexes_list, n):
     return res
 
 # For each node in dataset, find a neighbor from dataset, such that the distance between them is less than dis. Maxmal check n*maxmal times
-def get_one_neighbor(dataset, similarity_matrix, dis, maxmal=0.4):
+def get_one_neighbor(dataset, similarity_matrix, dis, maxmal=0.7):
     num = len(dataset)
     if num <= 1:
         print("at least 2 samples")
@@ -37,7 +37,7 @@ def get_one_neighbor(dataset, similarity_matrix, dis, maxmal=0.4):
             if index == i:
                 index = 0
             temp_dis = F.pairwise_distance(dataset[i].view(1,-1), dataset[index].view(1,-1))
-            if  similarity_matrix[i][index] == 0 and temp_dis < dis[i]:
+            if  similarity_matrix[i][index] == 0 and torch.pow(temp_dis, 2) < dis[i]:
                 candidate = index
                 break
             if similarity_matrix[i][index] < min_similarity and (min_dis == -1 or min_dis >  temp_dis):
@@ -56,7 +56,7 @@ def get_similarity_matrix(tag_list):
     return m
 
 # For each node in dataset, find a pos and a neg samples from dataset. Maxmal check n*maxmal times
-def get_pos_neg(tag_list, similarity_matrix, maxmal=0.4):
+def get_pos_neg(tag_list, similarity_matrix, maxmal=0.7):
     num = len(tag_list)
     if num <= 2:
         print("at least 3 samples")
@@ -65,21 +65,24 @@ def get_pos_neg(tag_list, similarity_matrix, maxmal=0.4):
     pos_indexes = []
     neg_indexes = []
     for i in range(num):
-        max_index = -1
-        max_similarity = -1 
+        max_index = i
+        max_similarity = 0 
         min_index = -1
         min_similarity = -1
         for j in range(maxmal):
             index = random.randint(1,num-1)
-            if index <= i:
-                index = i-1
+            if index == i:
+                index = 0
             similarity = similarity_matrix[i][index]
             if min_similarity == -1 or min_similarity > similarity:
                 min_similarity = similarity
                 min_index = index
-            if max_similarity == -1 or max_similarity <  similarity:
+            if max_similarity <  similarity:
                 max_similarity = similarity
                 max_index = index
+            if min_similarity == 0 and max_similarity > 0:
+                if random.randint(1,int(maxmal/5)) == 1:
+                    break
         pos_indexes.append(max_index)
         neg_indexes.append(min_index)
     return pos_indexes, neg_indexes

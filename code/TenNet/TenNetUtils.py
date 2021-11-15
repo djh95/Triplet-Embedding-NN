@@ -22,7 +22,7 @@ def compute_loss(x_images, y_tags, image_model, tag_model, triplet_loss, Lambda 
     positive_tag = tag_features
 
     similarity_matrix = get_similarity_matrix(y_tags)
-    z_tag_indexes = get_one_neighbor(tag_features, similarity_matrix, IT_dist + Margin_Distance)
+    z_tag_indexes = get_one_neighbor(tag_features, similarity_matrix, torch.pow(IT_dist, 2) + Margin_Distance)
     negative_tag = torch.cat([tag_features[i].view(1,-1) for i in z_tag_indexes])
 
     z_images_pos, z_images_neg = get_pos_neg(y_tags, similarity_matrix)
@@ -192,12 +192,14 @@ def run(image_model, tag_model, train_loader, valid_loader, triplet_loss, lr = 0
         Lambda = min(Lambda * 1.5, 0.1)
         loss_dis_train = train(image_model, tag_model, train_loader, triplet_loss, Lambda, optimizer)
         loss_dis_valid = validate(image_model, tag_model, valid_loader, triplet_loss, Lambda, optimizer, e, min_valid_loss, True, name=name) 
-        evalue(valid_loader.dataset, image_model, tag_model, k=3)
+
         if print_log:
             print(f"epoch:{e}:")
             output_loss_dis(f" 1-train dataset train model", loss_dis_train) 
             output_loss_dis(f" 2-valid dataset evalue model", loss_dis_valid)
         min_valid_loss = loss_dis_valid[5]
+        evalue(valid_loader.dataset, image_model, tag_model, k=3)
+        print("")
   
         ten_res.append([list(loss_dis_train),list(loss_dis_valid)])
 
@@ -294,7 +296,7 @@ def evalue(data, image_model, tag_model, k=3):
         accuracy = accuracy + res[3]
         tp = tp + res[4]
         sum_p = sum_p + res[5]
-        sum_g = sum_g + res[6]
+        sum_g = sum_g + min(res[6],3)
 
     num = data.images_number
     precision = precision / num
@@ -311,7 +313,7 @@ def evalue(data, image_model, tag_model, k=3):
             f"Accuracy: {accuracy:.4f}." )
     print( "Average number of tags")
     print(  f"True positive: {tp:.2f},  " +
-            f"Positive tags in prediction: {sum_p:.2f},  " +
-            f"Positive tags in ground truth: {sum_g:.2f}." )
+            f"Pos. tags prediction: {sum_p:.2f},  " +
+            f"Pos. tags ground truth (<=3): {sum_g:.2f}." )
     return precision, recall, F1, accuracy, tp, sum_p, sum_g
 
