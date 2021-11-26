@@ -4,8 +4,18 @@ import torch
 import torch.nn.functional as F
 import random
 import os
+from enum import IntEnum
 
 from Define import *
+
+
+class LossModel (IntEnum):
+    # tag -> feature ->tag
+    DecoderModel = 0
+    # image -> feature ->tag
+    PredictModel = 1
+    HybridModel = 2
+    HybridModel2 = 3
 
 def get_tag_from_prediction(predictions, threshold=0.5):
     tags = []
@@ -17,7 +27,7 @@ def get_tag_from_prediction(predictions, threshold=0.5):
     return torch.tensor(tags).to(device)
 
 def similarity_tags(tag1, tag2):
-    return len(torch.nonzero(tag1 * tag2))
+    return (tag1 * tag2).sum()
 
 def compute_column_maximum(m):
     res = [i for i in m[0][0]]

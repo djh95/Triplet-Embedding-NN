@@ -9,19 +9,6 @@ IMAGE_HEIGHT = 224
 IMAGE_WIDTH = 224
 IMAGE_CHANNEL = 3
 
-BATCH_SIZE = 32
-WEIGHT_DECAY = 5e-5
-
-
-Feature_Dimensions = 1000
-#25 50 100 200
-Word_Dimensions = 256
-
-N_Epochs_Decoder = 20
-
-Threshold = 0.5
-
-
 Image_List_Path_Train = '../NUS_WID/ImageList/TrainImageList.txt'
 Image_List_Path_Test  = '../NUS_WID/ImageList/TestImageList.txt'
 Image_List_Path_All   = '../NUS_WID/ImageList/ImageList.txt'

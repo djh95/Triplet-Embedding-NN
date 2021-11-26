@@ -1,94 +1,14 @@
-from re import L
 import torch
 import torch.nn.functional as F
 import numpy as np
 from tqdm.notebook import tqdm
 from jupyterplot import ProgressPlot
+from IPython.display import *
+import IPython.display
 
+from .Visualization import *
 from .Utils import *
-from .TenNetTag import *
-from .TenNetImage import *
 
-def compute_loss(x_images, y_tags, image_model, tag_model, triplet_loss, Lambda = 0.5):
-
-    image_features = image_model(x_images)
-    tag_features = tag_model(y_tags)
-        
-    # in feature space
-    IT_dist =  F.pairwise_distance(image_features, tag_features)
-
-    # first triplet loss, an image, cor tag, and a neg image
-    anchor_image = image_features
-    positive_tag = tag_features
-
-    similarity_matrix = get_similarity_matrix(y_tags)
-    z_tag_indexes = get_one_neighbor(tag_features, similarity_matrix, torch.pow(IT_dist, 2) + Margin_Distance)
-    negative_tag = torch.cat([tag_features[i].view(1,-1) for i in z_tag_indexes])
-
-    z_images_pos, z_images_neg = get_pos_neg(y_tags, similarity_matrix)
-    positive_image = torch.cat([image_features[i].view(1,-1) for i in z_images_pos])
-    negative_image = torch.cat([image_features[i].view(1,-1) for i in z_images_neg])
-
-    lossIT, dist_image_tag_pos, dist_image_tag_neg = triplet_loss(anchor_image, positive_tag, negative_tag)
-
-    # second triplet loss, an image, a pos image, a neg image
-    lossII, dist_image_image_pos, dist_image_image_neg =triplet_loss(anchor_image, positive_image, negative_image)
-    loss = lossIT +  Lambda * lossII
-
-    return loss, dist_image_tag_pos, dist_image_image_pos, dist_image_tag_neg, dist_image_image_neg
-
-def single_epoch_computation(image_model, tag_model, loader, triplet_loss, Lambda, optim=None, updata=False):
-    loss = 0
-    IT_positive_dis = 0
-    II_positive_dis = 0
-    IT_negative_dis = 0
-    II_negative_dis = 0
-
-    for (x_images,y_tags) in loader:
-        
-        x_images, y_tags = x_images.to(device), y_tags.to(device)    
-        res = compute_loss(x_images, y_tags, image_model, tag_model, triplet_loss, Lambda)
-
-        if updata:
-            optim.zero_grad()
-            res[0].backward()
-            optim.step()
-
-        loss += res[0].item()
-        IT_positive_dis += res[1].item()
-        II_positive_dis += res[2].item()
-        IT_negative_dis += res[3].item()
-        II_negative_dis += res[4].item()
-
-    loss /= len(loader)
-    IT_positive_dis /= len(loader)
-    II_positive_dis /= len(loader)
-    IT_negative_dis /= len(loader)
-    II_negative_dis /= len(loader)
-
-    return loss, IT_positive_dis, II_positive_dis, IT_negative_dis, II_negative_dis
-
-def train(image_model, tag_model, loader, triplet_loss, Lambda, optim, updata=True):
-
-    image_model.train()
-    tag_model.train()
-
-    res = single_epoch_computation(image_model, tag_model, loader, triplet_loss, Lambda, optim, updata=True)
-
-    return res
-
-def validate(image_model, tag_model, loader, triplet_loss, Lambda, optim, epoch, min_loss, save_best=True, name="../SavedModelState/IT_model_" + str(Margin_Distance) +".ckpt"):
-    
-    image_model.eval()
-    tag_model.eval()
-
-    with torch.no_grad():
-        res = single_epoch_computation(image_model, tag_model, loader, triplet_loss, Lambda, optim, updata=False)
-
-    if save_best and (min_loss == -1 or min_loss > res[0]):
-        min_loss = res[0]
-        save_TenNet(image_model, tag_model, optim, epoch, loss=min_loss, name=name)
-    return res + (min_loss,)
 
 def save_TenNet(image_model, tag_model, optim, epoch, loss, name):
     torch.save({
@@ -99,16 +19,7 @@ def save_TenNet(image_model, tag_model, optim, epoch, loss, name):
             'loss': loss,
             }, name)
 
-
-def output_loss_dis(s, loss_dis):
-    print(  s + "\n" +
-            f"loss: {loss_dis[0]:.2f},  " +
-            f"IT_pos_dis: {loss_dis[1]:.2f},  " +
-            f"II_pos_dis: {loss_dis[2]:.2f},  " + 
-            f"IT_neg_dis: {loss_dis[3]:.2f},  " + 
-            f"II_neg_dis: {loss_dis[4]:.2f}." )
-
-def getTenModel(tag_model, image_model, name = "../SavedModelState/IT_model_" + str(Margin_Distance) +".ckpt"):
+def getTenModel(tag_model, image_model, name):
     try:
         checkpoint = torch.load(name)
         image_model.load_state_dict(checkpoint['image_model_state_dict'])   
@@ -121,66 +32,9 @@ def getTenModel(tag_model, image_model, name = "../SavedModelState/IT_model_" + 
     except FileNotFoundError:
         print("Can\'t found " + name)
 
-def printLossLog(res, n_epochs):
-
-    pbar = tqdm(range(min(len(res), n_epochs)))
-    for e in pbar:
-    
-        dis = res[e][0]
-        output_loss_dis(f"epoch:{e}: 1-train dataset with train model", dis)
-        
-        loss_dis_valid = res[e][1]   
-        output_loss_dis(f"epoch:{e}: 2-valid dataset with evalue model", loss_dis_valid)
-
-def printLossProgressPlot(res, n_epochs):
-
-    max_v = compute_column_maximum(res)[0]
-
-    pp = ProgressPlot(plot_names=["loss"],
-                    line_names=["train", "valid"],
-                    x_lim=[0, n_epochs-1], 
-                    y_lim=[0, max_v])
-
-    pbar = tqdm(range(min(len(res), n_epochs)))
-    for e in pbar:
-    
-        train_loss = res[e][0]
-        valid_loss = res[e][1]
-    
-        pp.update([[train_loss[0], valid_loss[0]]])
-
-    pp.finalize()
-
-def printDistanceProgressPlot(res, n_epochs, train=True):
-
-    max_v = max(compute_column_maximum(res)[1:])
-
-    if train:
-        names = "train distance"
-    else:
-        names = "valid distance"
-
-    pp = ProgressPlot(plot_names=[names],
-                  line_names=["pos_IT", "pos_II", "neg_IT", "neg_II"],
-                  x_lim=[0, n_epochs-1], 
-                  y_lim=[0, max_v])
-
-    pbar = tqdm(range(min(len(res), n_epochs)))
-    for e in pbar:
-        
-        if train:
-            dis = res[e][0]
-        else:
-            dis = res[e][1]
-    
-        pp.update([[dis[1], dis[2], dis[3], dis[4]]])
-
-    pp.finalize()
-
-def run(image_model, tag_model, train_loader, valid_loader, triplet_loss, lr = 0.001, gamma = 0.9, name="../SavedModelState/IT_model_" + str(Margin_Distance) +".ckpt", n_epochs=10, print_log = True,Lambda = 0.1):
-    
+def run(image_model, tag_model, train_loader, valid_loader, test_loader, triplet_loss, lr, gamma, Margin_Dis, n_epochs, Lambda, print_log=True):
+    name = "../SavedModelState/IT_model_" + str(Margin_Dis) +".ckpt"
     ten_res = []
-
     pbar = tqdm(range(n_epochs))
     lr = lr
     Lambda = Lambda
@@ -188,90 +42,54 @@ def run(image_model, tag_model, train_loader, valid_loader, triplet_loss, lr = 0
     optimizer = torch.optim.RMSprop([{'params' : image_model.parameters()}, {'params' : tag_model.parameters()}], lr=lr, alpha=0.99, eps=1e-08, weight_decay=0, momentum=0, centered=False)
     scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma = gamma, last_epoch=-1)
     for e in pbar:
+        loss_dis_train = train(image_model, tag_model, train_loader, triplet_loss, Lambda, optimizer, Margin_Dis)
+        loss_dis_valid = validate(image_model, tag_model, valid_loader, triplet_loss, Lambda, optimizer, Margin_Dis, e, min_valid_loss, True, name=name) 
         scheduler.step()
-        Lambda = min(Lambda * 1.5, 0.1)
-        loss_dis_train = train(image_model, tag_model, train_loader, triplet_loss, Lambda, optimizer)
-        loss_dis_valid = validate(image_model, tag_model, valid_loader, triplet_loss, Lambda, optimizer, e, min_valid_loss, True, name=name) 
-
+        
         if print_log:
             print(f"epoch:{e}:")
             output_loss_dis(f" 1-train dataset train model", loss_dis_train) 
             output_loss_dis(f" 2-valid dataset evalue model", loss_dis_valid)
         min_valid_loss = loss_dis_valid[5]
-        evalue(valid_loader.dataset, image_model, tag_model, k=3)
+        evalue(test_loader, image_model, tag_model, k=3)
         print("")
-  
         ten_res.append([list(loss_dis_train),list(loss_dis_valid)])
 
     return ten_res
 
-def test(image_model, tag_model, loader, triplet_loss, Lambda):
+def train(image_model, tag_model, loader, triplet_loss, Lambda, optim, Margin_Dis, updata=True):
+
+    image_model.train()
+    tag_model.train()
+
+    res = single_epoch_computation(image_model, tag_model, loader, triplet_loss, Lambda, Margin_Dis, optim, updata=True)
+
+    return res
+
+def validate(image_model, tag_model, loader, triplet_loss, Lambda, optim, Margin_Dis, epoch, min_loss, save_best=True, name="../SavedModelState/IT_model_.ckpt"):
+    
     image_model.eval()
     tag_model.eval()
 
     with torch.no_grad():
-        res = single_epoch_computation(image_model, tag_model, loader, triplet_loss, Lambda, updata=False)
+        res = single_epoch_computation(image_model, tag_model, loader, triplet_loss, Lambda, Margin_Dis, optim, updata=False)
+
+    if save_best and (min_loss == -1 or min_loss > res[0]):
+        min_loss = res[0]
+        save_TenNet(image_model, tag_model, optim, epoch, loss=min_loss, name=name)
+    return res + (min_loss,)
+
+def test(image_model, tag_model, loader, triplet_loss, Lambda, Margin_Dis):
+    image_model.eval()
+    tag_model.eval()
+
+    with torch.no_grad():
+        res = single_epoch_computation(image_model, tag_model, loader, triplet_loss, Lambda, Margin_Dis, updata=False)
         output_loss_dis("test result:", res)
     return res
 
-def select_k_tags(data, image_model, tag_model, k):
-    res = []
-
-    def firstV(d):
-        return d[0]
-
-    tag_features = compute_single_tag_feature(tag_model, len(data.tag_list))
-
-    for i in range(data.images_number):
-        temp = []
-        image_i = data.get_image(i)
-        image_i = image_i.unsqueeze(0)
-        image_i = image_i.to(device)
-        image_features_i = image_model(image_i)
-
-        for j in range(len(data.tag_list)):
-            dis = torch.sum(torch.square(image_features_i - tag_features[j]))
-            temp.append([dis, j])
-            temp.sort(key=firstV)
-            if len(temp) > k:
-                temp = temp[0:k]
-        res_i = [d[1] for d in temp]
-        res.append(res_i)
-    return res
-
-def compute_single_tag_feature(tag_model, n):
-    tag_feature = None
-
-    for i in range(n):
-        y_tags = torch.zeros((1,Word_Dimensions)) 
-        y_tags[0][i] = 1
-        y_tags = y_tags.to(device)   
-        fea = tag_model(y_tags)
-        if tag_feature == None:
-            tag_feature = fea
-        else:
-            tag_feature = torch.cat((tag_feature, fea), 0)
-    return tag_feature
-
-def evalue_single(tag_v, ground_truth_tag_v):
-    tp = similarity_tags(tag_v, ground_truth_tag_v)
-    sum_p = sum(tag_v)
-    fp = sum_p - tp
-    sum_g = sum(ground_truth_tag_v)
-    fn = sum_g - tp
-    tn = len(tag_v) - sum(tag_v) - fn
-    # p = tp / sum(tag_v)
-    p = tp / (tp+fp)
-    # r = tp / sum(ground_truth_tag_v)
-    r = tp / (tp+fn)
-    if p == 0 and r == 0:
-        f1 = 0
-    else:
-        f1 = 2 * p * r / (p+r)
-    c = (tp+tn) / (tp+tn+fp+fn)
-    return p, r, f1, c, tp, sum_p, sum_g
-
-def evalue(data, image_model, tag_model, k=3):
+def evalue(loader, image_model, tag_model, k=3):
+    data = loader.dataset
     image_model.eval()
     tag_model.eval()
 
@@ -280,31 +98,30 @@ def evalue(data, image_model, tag_model, k=3):
     F1 = 0
     accuracy = 0
     tp = 0
-    sum_p = 0
+    sum_p = k
     sum_g = 0
 
-    k_tags = select_k_tags(data, image_model, tag_model,k)
+    k_tags = select_k_tags(loader, image_model, tag_model,k)
     tag_matrix = get_tag_vectors(k_tags, len(data.tag_list))
 
-    for i in range(data.images_number):
+    tp_list = similarity_tags(tag_matrix, data.image_tags)
+    tp = tp_list.mean()
 
-        res = evalue_single(tag_matrix[i], data.image_tags[i])
+    for i in range(data.image_number):
+
+        res = evalue_single(data.image_tags[i], tp_list[i], k)
 
         precision = precision + res[0]
         recall = recall + res[1]
         F1 = F1 + res[2]
         accuracy = accuracy + res[3]
-        tp = tp + res[4]
-        sum_p = sum_p + res[5]
-        sum_g = sum_g + min(res[6],3)
+        sum_g = sum_g
 
-    num = data.images_number
+    num = data.image_number
     precision = precision / num
     recall = recall / num
     F1 = F1 / num
     accuracy = accuracy / num
-    tp = tp / num
-    sum_p = sum_p / num
     sum_g = sum_g / num
     print( "Evaluate result:")
     print(  f"Precision: {precision:.4f},  " +
@@ -312,8 +129,8 @@ def evalue(data, image_model, tag_model, k=3):
             f"F1: {F1:.4f},  " + 
             f"Accuracy: {accuracy:.4f}." )
     print( "Average number of tags")
-    print(  f"True positive: {tp:.2f},  " +
-            f"Pos. tags prediction: {sum_p:.2f},  " +
-            f"Pos. tags ground truth (<=3): {sum_g:.2f}." )
-    return precision, recall, F1, accuracy, tp, sum_p, sum_g
+    print(  f"True positive: {tp:.4f},  " +
+            f"Pos. tags prediction: {sum_p:.4f},  " +
+            f"Pos. tags ground truth (<=3): {sum_g:.4f}." )
+    # return precision, recall, F1, accuracy, tp, sum_p, sum_g
 
