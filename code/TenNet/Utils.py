@@ -61,7 +61,7 @@ def get_neg_neighbor(image_features, tag_features, similarity_matrix, IT_dist, M
 
 # For each node in dataset, find a pos and a neg samples from dataset. Maxmal check n*maxmal times
 def get_pos_indexes(data, tag_matrix):
-    #ondition = condition = [True] * 2 + [False]
+    condition = [True] * 2 + [False]
     pos_image_indexes = []
     for tag_v in tag_matrix:
         tag_index = -1
@@ -84,6 +84,22 @@ def get_pos_indexes(data, tag_matrix):
         pos_image_indexes.append(image_index)
 
     return pos_image_indexes
+
+def get_pos(tag_list, similarity_matrix):
+    num = len(tag_list)
+    if num <= 2:
+        print("at least 3 samples")
+        return
+    pos_indexes = []
+    for i in range(num):
+        p_set = torch.topk(similarity_matrix[i],5)[1]
+        p_set = [index for index in p_set if similarity_matrix[i][index] > 0 and index != i]
+        if len(p_set) == 0:
+            max_index = i
+        else:
+            max_index = random.sample(p_set, 1)[0]
+        pos_indexes.append(max_index)
+    return pos_indexes
 
 def get_neg(tag_list, similarity_matrix):
     num = len(tag_list)
@@ -161,9 +177,14 @@ def compute_loss(data, x_images, y_tags, image_model, tag_model, triplet_loss, L
     z_tag_indexes = get_neg_neighbor(image_features, tag_features, similarity_matrix, IT_dist, torch.pow(IT_dist, 2) + Margin_Dis)
     negative_tag = torch.cat([tag_features[i].view(1,-1) for i in z_tag_indexes])
 
-    z_image_indexes_pos = get_pos_indexes(data, y_tags)
-    z_images = data.get_images(z_image_indexes_pos).to(device)
-    positive_image =  image_model(z_images)
+    if global_sample:
+        z_image_indexes_pos = get_pos_indexes(data, y_tags)
+        z_images = data.get_images(z_image_indexes_pos).to(device)
+        positive_image =  image_model(z_images)
+    else:
+        z_images_pos = get_pos(y_tags, similarity_matrix)
+        positive_image = torch.cat([image_features[i].view(1,-1) for i in z_images_pos])
+
     z_images_neg = get_neg(y_tags, similarity_matrix)
     negative_image = torch.cat([image_features[i].view(1,-1) for i in z_images_neg])
 
@@ -171,8 +192,7 @@ def compute_loss(data, x_images, y_tags, image_model, tag_model, triplet_loss, L
 
     # second triplet loss, an image, a pos image, a neg image
     lossII, dist_image_image_pos, dist_image_image_neg =triplet_loss(anchor_image, positive_image, negative_image)
-    loss = lossIT +  Lambda * lossII
-    loss = loss * data.get_weight(y_tags)
+    loss = lossIT +  Lambda * lossII * data.get_weight(y_tags)
     loss = torch.mean(loss)
 
     return loss, dist_image_tag_pos, dist_image_image_pos, dist_image_tag_neg, dist_image_image_neg
@@ -208,7 +228,7 @@ def single_epoch_computation(image_model, tag_model, loader, triplet_loss, Lambd
 
     return loss, IT_positive_dis, II_positive_dis, IT_negative_dis, II_negative_dis
 
-def select_k_tags(loader, image_model, tag_model, k, rows=None):
+def select_k_tags(loader, image_model, tag_model, k):
     res = []
     tag_features = compute_single_tag_feature(tag_model, len(loader.dataset.tag_list))
 
