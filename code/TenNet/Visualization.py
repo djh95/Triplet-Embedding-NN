@@ -74,12 +74,13 @@ def print_tags(data, tag_v):
     tags = [data.tag_list[i] for i in range(len(tag_v)) if tag_v[i] ]
     print(tags)
 
-def predict(data, image_model, tag_model, k=3, number=10):
+def predict(loader, image_model, tag_model, k=3, number=10):
+    data = loader.dataset
     image_model.eval()
     tag_model.eval()
 
     rows = random.sample(range(data.image_number), number)
-    k_tags = select_k_tags(data, image_model, tag_model, k, rows)
+    k_tags = select_k_tags(loader, image_model, tag_model, k, rows)
     tag_matrix = get_tag_vectors(k_tags, len(data.tag_list))
 
     for index, r in enumerate(rows):
@@ -95,5 +96,22 @@ def predict(data, image_model, tag_model, k=3, number=10):
 
         #display(Image(data.get_image_path(data.get_image_name(r))))
         display(Image(data.get_image_path_by_index(r)))
+
+def show_data(data, number=10):
+
+    rows = random.sample(range(data.image_number), number)
+
+    for r in rows:
+        print("Ground Truth:")
+        print_tags(data, data.image_tags[r])
+        display(Image(data.get_image_path_by_index(r)))
+
+def show_data_with_indexes(data, rows):
+
+    for r in rows:
+        print("Ground Truth:")
+        print_tags(data, data.image_tags[r])
+        display(Image(data.get_image_path_by_index(r)))
+
 
 

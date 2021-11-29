@@ -20,9 +20,14 @@ def get_tag_vectors(indexes_list, n):
         res.append(temp)
     return np.asarray(res)
 
-def get_similarity_matrix(tag_list):
-    t = tag_list.float()
+def get_similarity_matrix(tag_matrix):
+    t = tag_matrix.float()
     return t.mm(t.t())
+
+def get_similarity_vector(tag_v, tag_matrix):
+    t1 = tag_v.view(len(tag_v),1).float()
+    t2 = tag_matrix.float()
+    return t2.mm(t1).squeeze()
 
 def similarity_tags(tag1, tag2):
     return (tag1 * tag2).sum(axis=1)
@@ -36,6 +41,8 @@ def get_neg_neighbor(image_features, tag_features, similarity_matrix, IT_dist, M
     indexes = []
     for i in range(num):
         n_set = [index for index in range(len(similarity_matrix[i])) if similarity_matrix[i][index] == 0]
+        if len(n_set) == 0:
+            n_set = [index for index in range(len(similarity_matrix[i])) if similarity_matrix[i][index] == 1]
         candidate = n_set[0]
         min_dis = -1
         n_set = random.sample(n_set, len(n_set))
@@ -53,26 +60,45 @@ def get_neg_neighbor(image_features, tag_features, similarity_matrix, IT_dist, M
     return indexes
 
 # For each node in dataset, find a pos and a neg samples from dataset. Maxmal check n*maxmal times
-def get_pos_neg(tag_list, similarity_matrix):
+def get_pos_indexes(data, tag_matrix):
+    #ondition = condition = [True] * 2 + [False]
+    pos_image_indexes = []
+    for tag_v in tag_matrix:
+        tag_index = -1
+        for j in range(len(tag_v)):
+            if tag_v[j]:
+                if tag_index == -1:
+                    tag_index = j
+                #if  random.choice(condition):
+                if random.random() < max(data.tag_weight[j].item(), 0.4):
+                    tag_index = j
+                    break
+        image_ids = data.image_ids_for_tag[tag_index]
+        sampled_ids = random.sample(image_ids, min(len(image_ids),10))
+        sampled_image_indexes = [data.image_ids_dic[id] for id in sampled_ids]
+        sampled_image_tag_matrix = data.get_tag_matrix(sampled_image_indexes)
+        sampled_image_tag_matrix = sampled_image_tag_matrix.to(device)
+
+        similarity_vector = get_similarity_vector(tag_v, sampled_image_tag_matrix)
+        image_index = sampled_image_indexes[torch.topk(similarity_vector,2)[1][1]]
+        pos_image_indexes.append(image_index)
+
+    return pos_image_indexes
+
+def get_neg(tag_list, similarity_matrix):
     num = len(tag_list)
     if num <= 2:
         print("at least 3 samples")
         return
-    pos_indexes = []
     neg_indexes = []
     for i in range(num):
-        p_set = [index for index in range(len(similarity_matrix[i])) if similarity_matrix[i][index] != 0 and index != i]
-        if len(p_set) == 0:
-            max_index = i
-        else:
-            max_index = random.sample(p_set, 1)[0]
-
         n_set = [index for index in range(len(similarity_matrix[i])) if similarity_matrix[i][index] == 0]
+        if len(n_set) == 0:
+            n_set = [index for index in range(len(similarity_matrix[i])) if similarity_matrix[i][index] == 1]
         min_index = random.sample(n_set, 1)[0]
 
-        pos_indexes.append(max_index)
         neg_indexes.append(min_index)
-    return pos_indexes, neg_indexes
+    return neg_indexes
 
 def get_tag_indexes(tag):
     indexes = [i for i in range(len(tag)) if tag[i] == 1]
@@ -120,7 +146,7 @@ def compute_column_maximum(m):
                 res[j] = m[i][1][j]
     return res
 
-def compute_loss(x_images, y_tags, image_model, tag_model, triplet_loss, Lambda, Margin_Dis):
+def compute_loss(data, x_images, y_tags, image_model, tag_model, triplet_loss, Lambda, Margin_Dis):
 
     image_features = image_model(x_images)
     tag_features = tag_model(y_tags)
@@ -135,8 +161,10 @@ def compute_loss(x_images, y_tags, image_model, tag_model, triplet_loss, Lambda,
     z_tag_indexes = get_neg_neighbor(image_features, tag_features, similarity_matrix, IT_dist, torch.pow(IT_dist, 2) + Margin_Dis)
     negative_tag = torch.cat([tag_features[i].view(1,-1) for i in z_tag_indexes])
 
-    z_images_pos, z_images_neg = get_pos_neg(y_tags, similarity_matrix)
-    positive_image = torch.cat([image_features[i].view(1,-1) for i in z_images_pos])
+    z_image_indexes_pos = get_pos_indexes(data, y_tags)
+    z_images = data.get_images(z_image_indexes_pos).to(device)
+    positive_image =  image_model(z_images)
+    z_images_neg = get_neg(y_tags, similarity_matrix)
     negative_image = torch.cat([image_features[i].view(1,-1) for i in z_images_neg])
 
     lossIT, dist_image_tag_pos, dist_image_tag_neg = triplet_loss(anchor_image, positive_tag, negative_tag)
@@ -144,6 +172,8 @@ def compute_loss(x_images, y_tags, image_model, tag_model, triplet_loss, Lambda,
     # second triplet loss, an image, a pos image, a neg image
     lossII, dist_image_image_pos, dist_image_image_neg =triplet_loss(anchor_image, positive_image, negative_image)
     loss = lossIT +  Lambda * lossII
+    loss = loss * data.get_weight(y_tags)
+    loss = torch.mean(loss)
 
     return loss, dist_image_tag_pos, dist_image_image_pos, dist_image_tag_neg, dist_image_image_neg
 
@@ -153,11 +183,11 @@ def single_epoch_computation(image_model, tag_model, loader, triplet_loss, Lambd
     II_positive_dis = 0
     IT_negative_dis = 0
     II_negative_dis = 0
-
+    i = 0
     for (x_images,y_tags) in loader:
         
         x_images, y_tags = x_images.to(device, non_blocking=True), y_tags.to(device, non_blocking=True)    
-        res = compute_loss(x_images, y_tags, image_model, tag_model, triplet_loss, Lambda, Margin_Dis)
+        res = compute_loss(loader.dataset, x_images, y_tags, image_model, tag_model, triplet_loss, Lambda, Margin_Dis)
 
         if updata:
             optim.zero_grad()
@@ -180,10 +210,6 @@ def single_epoch_computation(image_model, tag_model, loader, triplet_loss, Lambd
 
 def select_k_tags(loader, image_model, tag_model, k, rows=None):
     res = []
-
-    def firstV(d):
-        return d[0]
-
     tag_features = compute_single_tag_feature(tag_model, len(loader.dataset.tag_list))
 
     for (x_images,y_tags) in loader:  
@@ -215,7 +241,7 @@ def evalue_single(ground_truth_tag_v, tp, sum_p):
 
     precision = tp / sum_p
     recall = tp / sum_g
-    if precision== 0 and recall == 0:
+    if precision == 0 and recall == 0:
         f1 = 0
     else:
         f1 = 2 * precision * recall / (precision + recall)

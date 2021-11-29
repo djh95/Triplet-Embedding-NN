@@ -115,7 +115,7 @@ def evalue(loader, image_model, tag_model, k=3):
         recall = recall + res[1]
         F1 = F1 + res[2]
         accuracy = accuracy + res[3]
-        sum_g = sum_g
+        sum_g = sum_g + res[6]
 
     num = data.image_number
     precision = precision / num
@@ -133,4 +133,5 @@ def evalue(loader, image_model, tag_model, k=3):
             f"Pos. tags prediction: {sum_p:.4f},  " +
             f"Pos. tags ground truth (<=3): {sum_g:.4f}." )
     # return precision, recall, F1, accuracy, tp, sum_p, sum_g
+
 
