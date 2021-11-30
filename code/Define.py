@@ -12,8 +12,8 @@ IMAGE_CHANNEL = 3
 BATCH_SIZE = 32
 WEIGHT_DECAY = 5e-5
 
-global_sample = False
-tag_weight = False
+global_sample = [False]
+tag_weight = [False]
 
 
 Feature_Dimensions = 1000

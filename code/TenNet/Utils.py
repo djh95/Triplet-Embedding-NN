@@ -43,7 +43,7 @@ def get_neg_neighbor(image_features, tag_features, similarity_matrix, IT_dist, M
         n_set = [index for index in range(len(similarity_matrix[i])) if similarity_matrix[i][index] == 0]
         if len(n_set) == 0:
             n_set = [index for index in range(len(similarity_matrix[i])) if similarity_matrix[i][index] == 1]
-        candidate = n_set[0]
+        candidate = random.choice(n_set)
         min_dis = -1
         n_set = random.sample(n_set, len(n_set))
         for j in range(len(n_set)):
@@ -177,7 +177,7 @@ def compute_loss(data, x_images, y_tags, image_model, tag_model, triplet_loss, L
     z_tag_indexes = get_neg_neighbor(image_features, tag_features, similarity_matrix, IT_dist, torch.pow(IT_dist, 2) + Margin_Dis)
     negative_tag = torch.cat([tag_features[i].view(1,-1) for i in z_tag_indexes])
 
-    if global_sample:
+    if global_sample[0]:
         z_image_indexes_pos = get_pos_indexes(data, y_tags)
         z_images = data.get_images(z_image_indexes_pos).to(device)
         positive_image =  image_model(z_images)
@@ -192,7 +192,10 @@ def compute_loss(data, x_images, y_tags, image_model, tag_model, triplet_loss, L
 
     # second triplet loss, an image, a pos image, a neg image
     lossII, dist_image_image_pos, dist_image_image_neg =triplet_loss(anchor_image, positive_image, negative_image)
-    loss = lossIT +  Lambda * lossII * data.get_weight(y_tags)
+    if tag_weight[0]:
+        loss = lossIT +  Lambda * lossII * data.get_weight(y_tags)
+    else:
+        loss = lossIT +  Lambda * lossII
     loss = torch.mean(loss)
 
     return loss, dist_image_tag_pos, dist_image_image_pos, dist_image_tag_neg, dist_image_image_neg
@@ -240,6 +243,29 @@ def select_k_tags(loader, image_model, tag_model, k):
             dis = (torch.square(tag_features - feature)).sum(dim=1)
             res_i = torch.topk(dis, k, largest=False)[1]
             res.append(res_i)
+    return res
+
+def select_k_tags_one_by_one(data, image_model, tag_model, k, rows=None):
+    res = []
+
+    def firstV(d):
+        return d[0]
+
+    tag_features = compute_single_tag_feature(tag_model, len(data.tag_list))
+
+    if rows == None:
+        rows = range(data.image_number)
+
+    for i in rows:
+        temp = []
+        image_i = data.get_image(i)
+        image_i = image_i.unsqueeze(0)
+        image_i = image_i.to(device)
+        image_features_i = image_model(image_i)
+        
+        dis = (torch.square(tag_features - image_features_i)).sum(dim=1)
+        res_i = torch.topk(dis, k, largest=False)[1]
+        res.append(res_i)
     return res
 
 def compute_single_tag_feature(tag_model, n):

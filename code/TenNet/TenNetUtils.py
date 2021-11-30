@@ -101,7 +101,7 @@ def evalue(loader, image_model, tag_model, k=3):
     sum_p = k
     sum_g = 0
 
-    k_tags = select_k_tags(loader, image_model, tag_model,k)
+    k_tags = select_k_tags(loader, image_model, tag_model, k)
     tag_matrix = get_tag_vectors(k_tags, len(data.tag_list))
 
     tp_list = similarity_tags(tag_matrix, data.image_tags)

@@ -80,7 +80,7 @@ def predict(loader, image_model, tag_model, k=3, number=10):
     tag_model.eval()
 
     rows = random.sample(range(data.image_number), number)
-    k_tags = select_k_tags(loader, image_model, tag_model, k, rows)
+    k_tags = select_k_tags_one_by_one(loader, image_model, tag_model, k, rows)
     tag_matrix = get_tag_vectors(k_tags, len(data.tag_list))
 
     for index, r in enumerate(rows):
