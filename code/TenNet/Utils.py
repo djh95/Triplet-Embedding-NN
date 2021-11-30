@@ -40,22 +40,33 @@ def get_neg_neighbor(image_features, tag_features, similarity_matrix, IT_dist, M
         return
     indexes = []
     for i in range(num):
-        n_set = [index for index in range(len(similarity_matrix[i])) if similarity_matrix[i][index] == 0]
-        if len(n_set) == 0:
-            n_set = [index for index in range(len(similarity_matrix[i])) if similarity_matrix[i][index] == 1]
-        candidate = random.choice(n_set)
-        min_dis = -1
+
+        min_simil = 0
+        n_set = []
+        while len(n_set) == 0:
+            n_set = [index for index in range(len(similarity_matrix[i])) if similarity_matrix[i][index] == min_simil]
+            min_simil = min_simil + 1
+
         n_set = random.sample(n_set, len(n_set))
+        candidate = -1
+        min_dis = -1
+        unsat_set = []
         for j in range(len(n_set)):
             index = n_set[j]
             temp_dis = F.pairwise_distance(image_features[i].view(1,-1), tag_features[index].view(1,-1))
             if torch.pow(temp_dis, 2) < Margindis[i]:
+                unsat_set.append(n_set(j))
                 if temp_dis > IT_dist[i]:
                     candidate = index
                     break
                 elif min_dis == -1 or min_dis <  temp_dis:
                     candidate = index
                     min_dis = temp_dis
+        if candidate == -1:
+            if len(unsat_set) != 0:
+                candidate = random.choice(unsat_set)
+            else:
+                candidate = random.choice(n_set)
         indexes.append(candidate)
     return indexes
 
@@ -97,7 +108,7 @@ def get_pos(tag_list, similarity_matrix):
         if len(p_set) == 0:
             max_index = i
         else:
-            max_index = random.sample(p_set, 1)[0]
+            max_index = random.sample(p_set, 1)[0].item()
         pos_indexes.append(max_index)
     return pos_indexes
 
