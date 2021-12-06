@@ -1,3 +1,4 @@
+from json import load
 from math import ceil
 import numpy as np
 import torch
@@ -6,6 +7,7 @@ import random
 import os
 
 from Define import *
+from .TenNetUtils import *
 
 def get_tag_vector(indexes, n):
     vector = [0] * n
@@ -33,14 +35,13 @@ def similarity_tags(tag1, tag2):
     return (tag1 * tag2).sum(axis=1)
 
 # For each node in dataset, find a neighbor from dataset, such that the distance between them is less than dis. Maxmal check n*maxmal times
-def get_neg_neighbor(image_features, tag_features, similarity_matrix, IT_dist, Margindis):
+def get_semi_neg_sample(image_features, tag_features, similarity_matrix, IT_dist, Margindis):
     num = len(image_features)
     if num <= 1:
         print("at least 2 samples")
         return
     indexes = []
     for i in range(num):
-
         min_simil = 0
         n_set = []
         while len(n_set) == 0:
@@ -55,7 +56,7 @@ def get_neg_neighbor(image_features, tag_features, similarity_matrix, IT_dist, M
             index = n_set[j]
             temp_dis = F.pairwise_distance(image_features[i].view(1,-1), tag_features[index].view(1,-1))
             if torch.pow(temp_dis, 2) < Margindis[i]:
-                unsat_set.append(n_set(j))
+                unsat_set.append(n_set[j])
                 if temp_dis > IT_dist[i]:
                     candidate = index
                     break
@@ -67,6 +68,32 @@ def get_neg_neighbor(image_features, tag_features, similarity_matrix, IT_dist, M
                 candidate = random.choice(unsat_set)
             else:
                 candidate = random.choice(n_set)
+        indexes.append(candidate)
+    return indexes
+
+def get_random_neg_sample(image_features, tag_features, similarity_matrix, IT_dist, Margindis):
+    num = len(image_features)
+    if num <= 1:
+        print("at least 2 samples")
+        return
+    indexes = []
+    for i in range(num):
+        min_simil = 0
+        n_set = []
+        while len(n_set) == 0:
+            n_set = [index for index in range(len(similarity_matrix[i])) if similarity_matrix[i][index] == min_simil]
+            min_simil = min_simil + 1
+
+        n_set = random.sample(n_set, len(n_set))
+        candidate = -1
+        for j in range(len(n_set)):
+            index = n_set[j]
+            temp_dis = F.pairwise_distance(image_features[i].view(1,-1), tag_features[index].view(1,-1))
+            if torch.pow(temp_dis, 2) < Margindis[i]:
+                candidate = index
+                break
+        if candidate == -1:
+            candidate = random.choice(n_set)
         indexes.append(candidate)
     return indexes
 
@@ -103,13 +130,14 @@ def get_pos(tag_list, similarity_matrix):
         return
     pos_indexes = []
     for i in range(num):
-        p_set = torch.topk(similarity_matrix[i],5)[1]
-        p_set = [index for index in p_set if similarity_matrix[i][index] > 0 and index != i]
+        #p_set = torch.topk(similarity_matrix[i],5)[1]
+        #p_set = [a.item() for a in p_set]
+        p_set = [index for index in range(len(similarity_matrix[i])) if similarity_matrix[i][index] > 0 and index != i]
         if len(p_set) == 0:
-            max_index = i
+            index = i
         else:
-            max_index = random.sample(p_set, 1)[0].item()
-        pos_indexes.append(max_index)
+            index = random.sample(p_set, 1)[0]
+        pos_indexes.append(index)
     return pos_indexes
 
 def get_neg(tag_list, similarity_matrix):
@@ -119,12 +147,14 @@ def get_neg(tag_list, similarity_matrix):
         return
     neg_indexes = []
     for i in range(num):
-        n_set = [index for index in range(len(similarity_matrix[i])) if similarity_matrix[i][index] == 0]
-        if len(n_set) == 0:
-            n_set = [index for index in range(len(similarity_matrix[i])) if similarity_matrix[i][index] == 1]
-        min_index = random.sample(n_set, 1)[0]
+        min_simil = 0
+        n_set = []
+        while len(n_set) == 0:
+            n_set = [index for index in range(len(similarity_matrix[i])) if similarity_matrix[i][index] == min_simil]
+            min_simil = min_simil + 1
 
-        neg_indexes.append(min_index)
+        index = random.sample(n_set, 1)[0]
+        neg_indexes.append(index)
     return neg_indexes
 
 def get_tag_indexes(tag):
@@ -185,7 +215,9 @@ def compute_loss(data, x_images, y_tags, image_model, tag_model, triplet_loss, L
     similarity_matrix = get_similarity_matrix(y_tags)
     IT_dist =  F.pairwise_distance(image_features, tag_features)
     
-    z_tag_indexes = get_neg_neighbor(image_features, tag_features, similarity_matrix, IT_dist, torch.pow(IT_dist, 2) + Margin_Dis)
+    z_tag_indexes = get_semi_neg_sample(image_features, tag_features, similarity_matrix, IT_dist, torch.pow(IT_dist, 2) + Margin_Dis)
+    #z_tag_indexes = get_random_neg_sample(image_features, tag_features, similarity_matrix, IT_dist, torch.pow(IT_dist, 2) + Margin_Dis)
+    
     negative_tag = torch.cat([tag_features[i].view(1,-1) for i in z_tag_indexes])
 
     if global_sample[0]:
@@ -199,17 +231,17 @@ def compute_loss(data, x_images, y_tags, image_model, tag_model, triplet_loss, L
     z_images_neg = get_neg(y_tags, similarity_matrix)
     negative_image = torch.cat([image_features[i].view(1,-1) for i in z_images_neg])
 
-    lossIT, dist_image_tag_pos, dist_image_tag_neg = triplet_loss(anchor_image, positive_tag, negative_tag)
+    lossIT, dist_image_tag_pos, dist_image_tag_neg, lossIT_part1 = triplet_loss(anchor_image, positive_tag, negative_tag)
 
     # second triplet loss, an image, a pos image, a neg image
-    lossII, dist_image_image_pos, dist_image_image_neg =triplet_loss(anchor_image, positive_image, negative_image)
+    lossII, dist_image_image_pos, dist_image_image_neg, lossII_part1 = triplet_loss(anchor_image, positive_image, negative_image)
+    
     if tag_weight[0]:
-        loss = lossIT +  Lambda * lossII * data.get_weight(y_tags)
+        loss = torch.mean(lossIT +  Lambda * lossII * data.get_weight(y_tags))
     else:
-        loss = lossIT +  Lambda * lossII
-    loss = torch.mean(loss)
+        loss = torch.mean(lossIT +  Lambda * lossII)
 
-    return loss, dist_image_tag_pos, dist_image_image_pos, dist_image_tag_neg, dist_image_image_neg
+    return loss, dist_image_tag_pos, dist_image_image_pos, dist_image_tag_neg, dist_image_image_neg, lossIT_part1, lossII_part1
 
 def single_epoch_computation(image_model, tag_model, loader, triplet_loss, Lambda, Margin_Dis, optim=None, updata=False):
     loss = 0
@@ -218,6 +250,10 @@ def single_epoch_computation(image_model, tag_model, loader, triplet_loss, Lambd
     IT_negative_dis = 0
     II_negative_dis = 0
     i = 0
+    tag_num = loader.dataset.tag_num
+    not_0_loss_tag_number = [0] * tag_num
+    number_0_IT_loss = 0
+    number_0_II_loss = 0
     for (x_images,y_tags) in loader:
         
         x_images, y_tags = x_images.to(device, non_blocking=True), y_tags.to(device, non_blocking=True)    
@@ -228,11 +264,24 @@ def single_epoch_computation(image_model, tag_model, loader, triplet_loss, Lambd
             res[0].backward()
             optim.step()
 
+        #print("res[0].item()",res[0].item())
         loss += res[0].item()
+        #print("loss", loss)
         IT_positive_dis += res[1].item()
         II_positive_dis += res[2].item()
         IT_negative_dis += res[3].item()
         II_negative_dis += res[4].item()
+        for i, loss_i in enumerate(res[5]):
+            if loss_i != 0:
+                indexes = [ j for j in range(tag_num) if y_tags[i][j]==1 ]
+                for index in indexes:
+                    not_0_loss_tag_number[index] = not_0_loss_tag_number[index] + 1
+            else:
+                number_0_IT_loss = number_0_IT_loss + 1
+
+        for i, loss_i in enumerate(res[6]):
+            if loss_i == 0:
+                number_0_II_loss = number_0_II_loss + 1
 
     loss /= len(loader)
     IT_positive_dis /= len(loader)
@@ -240,7 +289,12 @@ def single_epoch_computation(image_model, tag_model, loader, triplet_loss, Lambd
     IT_negative_dis /= len(loader)
     II_negative_dis /= len(loader)
 
-    return loss, IT_positive_dis, II_positive_dis, IT_negative_dis, II_negative_dis
+    print("The number of label occurrences in non-zero loss:")
+    print(not_0_loss_tag_number)
+    print(loader.dataset.tag_list)
+    print(loader.dataset.image_number_for_tag)
+
+    return loss, IT_positive_dis, II_positive_dis, IT_negative_dis, II_negative_dis, number_0_IT_loss, number_0_II_loss
 
 def select_k_tags(loader, image_model, tag_model, k):
     res = []
@@ -304,3 +358,18 @@ def evalue_single(ground_truth_tag_v, tp, sum_p):
         f1 = 2 * precision * recall / (precision + recall)
     c = (tp+tn) / (tp+tn+fp+fn)
     return precision, recall, f1, c, tp, sum_p, sum_g
+
+def write_loss_log(writer, res, name, index):
+    #loss, IT_positive_dis, II_positive_dis, IT_negative_dis, II_negative_dis
+    writer.add_scalar('Loss/' + name, res[0], index)
+    writer.add_scalar('0_IT_Loss/' + name, res[5], index)
+    writer.add_scalar('0_II_Loss/' + name, res[6], index)
+
+def write_evalue_log(writer, res, name, index):
+    # precision, recall, F1, accuracy, tp, sum_p, sum_g
+    writer.add_scalar('precision/' + name, res[0], index)
+    writer.add_scalar('recall/'  + name, res[1], index)
+    writer.add_scalar('F1/' + name, res[2], index)
+    writer.add_scalar('accuracy/' + name, res[3], index)
+    
+

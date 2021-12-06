@@ -6,6 +6,7 @@ from jupyterplot import ProgressPlot
 from IPython.display import *
 import IPython.display
 
+from Define import *
 from .Visualization import *
 from .Utils import *
 
@@ -32,7 +33,8 @@ def getTenModel(tag_model, image_model, name):
     except FileNotFoundError:
         print("Can\'t found " + name)
 
-def run(image_model, tag_model, train_loader, valid_loader, test_loader, triplet_loss, lr, gamma, Margin_Dis, n_epochs, Lambda, print_log=True):
+def run(writer, image_model, tag_model, train_loader, valid_loader, train_loader_for_evalue, test_loader, triplet_loss, lr, gamma, Margin_Dis, n_epochs, Lambda, print_log=True):
+    print("global_sample:", global_sample[0], "tag_weight:", tag_weight[0])
     name = "../SavedModelState/IT_model_" + str(Margin_Dis) +".ckpt"
     ten_res = []
     pbar = tqdm(range(n_epochs))
@@ -45,14 +47,20 @@ def run(image_model, tag_model, train_loader, valid_loader, test_loader, triplet
         loss_dis_train = train(image_model, tag_model, train_loader, triplet_loss, Lambda, optimizer, Margin_Dis)
         loss_dis_valid = validate(image_model, tag_model, valid_loader, triplet_loss, Lambda, optimizer, Margin_Dis, e, min_valid_loss, True, name=name) 
         scheduler.step()
-        
+
+        write_loss_log(writer, loss_dis_train, "train", e)
+        write_loss_log(writer, loss_dis_valid, "valid", e)
+
         if print_log:
             print(f"epoch:{e}:")
             output_loss_dis(f" 1-train dataset train model", loss_dis_train) 
             output_loss_dis(f" 2-valid dataset evalue model", loss_dis_valid)
         min_valid_loss = loss_dis_valid[5]
-        evalue(test_loader, image_model, tag_model, k=3)
+
+        #write_evalue_log(writer, evalue(test_loader, image_model, tag_model, k=3),  "test", e)
+        evalu_both(train_loader_for_evalue, test_loader, image_model, tag_model, writer, e)
         print("")
+
         ten_res.append([list(loss_dis_train),list(loss_dis_valid)])
 
     return ten_res
@@ -132,6 +140,8 @@ def evalue(loader, image_model, tag_model, k=3):
     print(  f"True positive: {tp:.4f},  " +
             f"Pos. tags prediction: {sum_p:.4f},  " +
             f"Pos. tags ground truth (<=3): {sum_g:.4f}." )
-    # return precision, recall, F1, accuracy, tp, sum_p, sum_g
+    return precision, recall, F1, accuracy, tp, sum_p, sum_g
 
-
+def evalu_both(train_loader, test_loader, image_model, tag_model, writer, index):
+    write_evalue_log(writer, evalue(train_loader, image_model, tag_model, k=3), "train", index)
+    write_evalue_log(writer, evalue(test_loader, image_model, tag_model, k=3),  "test", index)

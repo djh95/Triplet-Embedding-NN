@@ -1,3 +1,4 @@
+from random import random
 from tqdm.notebook import tqdm
 from jupyterplot import ProgressPlot
 from IPython.display import *
@@ -80,7 +81,7 @@ def predict(loader, image_model, tag_model, k=3, number=10):
     tag_model.eval()
 
     rows = random.sample(range(data.image_number), number)
-    k_tags = select_k_tags_one_by_one(loader, image_model, tag_model, k, rows)
+    k_tags = select_k_tags_one_by_one(loader.dataset, image_model, tag_model, k, rows)
     tag_matrix = get_tag_vectors(k_tags, len(data.tag_list))
 
     for index, r in enumerate(rows):
@@ -90,7 +91,7 @@ def predict(loader, image_model, tag_model, k=3, number=10):
         print("Ground Truth:")
         print_tags(data, data.image_tags[r])
 
-        tp = similarity_tags(tag_matrix[index], data.image_tags[r])
+        tp = (tag_matrix[index] * data.image_tags[r]).sum()
         print("True Positive:")
         print(tp)
 
@@ -102,6 +103,7 @@ def show_data(data, number=10):
     rows = random.sample(range(data.image_number), number)
 
     for r in rows:
+        print("index:", r)
         print("Ground Truth:")
         print_tags(data, data.image_tags[r])
         display(Image(data.get_image_path_by_index(r)))

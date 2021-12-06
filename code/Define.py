@@ -9,7 +9,6 @@ IMAGE_HEIGHT = 224
 IMAGE_WIDTH = 224
 IMAGE_CHANNEL = 3
 
-BATCH_SIZE = 32
 WEIGHT_DECAY = 5e-5
 
 global_sample = [False]

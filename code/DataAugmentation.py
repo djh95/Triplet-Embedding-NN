@@ -17,7 +17,7 @@ def expansion(image, condition = [False, True]):
 
 
 # prob = 20%
-def random_flip(image, condition = [True] + [False] * 4):
+def random_flip(image, condition = [True] + [False]):
     if random.choice(condition):
         h, w, c = image.shape
         image = np.fliplr(image).copy()
@@ -37,14 +37,14 @@ def random_scale(image, condition = [False, True]):
     return image
 
 # prob = 10%
-def random_blur(image, condition = [True] + [False] * 9):
+def random_blur(image, condition = [True] + [False] * 4):
     if random.choice(condition):
         f = random.choice([3, 5])
         image = cv2.blur(image, (f, f))
     return image
 
 # prob = 10%
-def random_brightness(image, condition = [True] + [False] * 9):
+def random_brightness(image, condition = [True] + [False] * 4):
     if random.choice(condition):
         adjust = random.uniform(0.8, 1.2)
         image = np.clip(image.astype(np.float32) * adjust, 0, 255).astype(np.uint8)
@@ -52,7 +52,7 @@ def random_brightness(image, condition = [True] + [False] * 9):
     return image
 
 # prob = 10%
-def random_hue(image, condition = [True] + [False] * 9):
+def random_hue(image, condition = [True] + [False] * 4):
     if random.choice(condition):
         hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
         h, s, v = cv2.split(hsv_image)
@@ -68,7 +68,7 @@ def random_hue(image, condition = [True] + [False] * 9):
     return image
 
 # prob = 10%
-def random_saturation(image, condition = [True] + [False] * 9):
+def random_saturation(image, condition = [True] + [False] * 4):
     if random.choice(condition):
         hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
         h, s, v = cv2.split(hsv_image)
@@ -84,14 +84,14 @@ def random_saturation(image, condition = [True] + [False] * 9):
     return image
 
 # prob = 5%
-def random_gray(image, condition = [True] + [False] * 19):
+def random_gray(image, condition = [True] + [False] * 9):
     if random.choice(condition):
         image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         image = cv2.merge([image, image, image])
     return image
 
 # prob = 10%
-def random_crop(image, condition = [True] + [False] * 9):
+def random_crop(image, condition = [True] + [False] * 4):
     if random.choice(condition):
         h, w, _ = image.shape
 

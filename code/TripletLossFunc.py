@@ -25,4 +25,4 @@ class TripletLossFunc(nn.Module):
         loss = part_1 
         if self.hybrid:
             loss = loss + self.beta * part_2 
-        return loss, torch.mean(pos_dis), torch.mean(neg_dis)
+        return loss, torch.mean(pos_dis), torch.mean(neg_dis), part_1
