@@ -56,24 +56,21 @@ def main():
     if device == torch.device('cuda'):
         Gpus = GPUtil.getGPUs()
         for gpu in Gpus:
+            if gpu.memoryTotal > 30000:
+                batch_size = 256
+                break
+            if gpu.memoryTotal > 15000:
+                batch_size = 128
+                break
             if gpu.memoryTotal > 12000:
                 batch_size = 64
                 break
-            if gpu.memoryTotal > 10000:
+            if gpu.memoryTotal > 11000:
                 batch_size = 56
                 break
-
-    if options.global_sample:           
-        batch_size = 24
-        if device == torch.device('cuda'):
-            Gpus = GPUtil.getGPUs()
-            for gpu in Gpus:
-                if gpu.memoryTotal > 12000:
-                    batch_size = 56
-                    break
-                if gpu.memoryTotal > 10000:
-                    batch_size = 48
-                    break
+            if gpu.memoryTotal > 7000:
+                batch_size = 32
+                break
 
 # dataset
     if options.dataset == "NUS81": 
@@ -104,7 +101,7 @@ def main():
 # model
     image_model = TenNet.VGG16_Normalize().to(device)
 
-    static_word_matrix = compute_word_matrix(train_data.image_tags, len(train_data.tag_list))
+    static_word_matrix = compute_word_matrix(train_data.image_tags, Word_Dimensions)
     tag_list = valid_data.get_tag_list()
     filters=[3, 4, 5]
     filter_num=[100, 100, 100]
@@ -116,9 +113,9 @@ def main():
     triplet_loss = TripletLossFunc(options.margin_distance)
 
 # run
-    TenNet.run(writer, image_model, tag_model, train_loader, valid_loader, 
-                train_loader_E, valid_loader_E, triplet_loss, 
-                options.learning_rate, options.delay_rate, options.margin_distance, 
+    TenNet.run(writer, image_model, tag_model, train_loader, valid_loader, train_loader_E, 
+                valid_loader_E, triplet_loss, options.learning_rate, options.delay_rate, 
+                options.margin_distance, options.global_sample,
                 options.epoch, options.loss_lambda, print_log=True)
 
     params = {

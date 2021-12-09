@@ -93,7 +93,9 @@ class TenNet_Tag(nn.Module): # input batchSize * 1 * tagNum * tagNum
                 nn.Dropout(p=self.DROPOUT_PROB, inplace=False),
                 nn.Linear(in_features=4096, out_features=self.Feature_Dimensions, bias=True),
                 )
-      
+
+    def get_conv(self, i):
+        return getattr(self, f'conv_{i}')
 
     def forward(self, tagsets):
         index_list = get_multy_tag_indexes(tagsets)
@@ -101,7 +103,7 @@ class TenNet_Tag(nn.Module): # input batchSize * 1 * tagNum * tagNum
             index_list[i] = random.sample(index_list[i], min(len(index_list[i]), self.max_length)) 
             index_list[i] = index_list[i] + [self.VOCAB_SIZE for i in range(self.max_length-len(index_list[i]))]
 
-        index_list = torch.from_numpy(np.asarray(index_list))
+        index_list = torch.from_numpy(np.asarray(index_list)).to(device)
         
         x = self.embedding_unstatic(index_list).view(-1, 1, self.max_length, self.WORD_DIM)
 
