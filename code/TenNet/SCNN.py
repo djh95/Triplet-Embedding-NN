@@ -4,7 +4,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 
-from Define import *
 from .Utils import *
 
 class EbeddingModel (IntEnum):
@@ -25,49 +24,75 @@ class BasicConv2d(nn.Module):
 
     def __init__(self, in_channels, out_channels, **kwargs):
         super(BasicConv2d, self).__init__()
-        self.conv = nn.Conv2d(in_channels, out_channels, bias=False, **kwargs)
-        self.bn = nn.BatchNorm2d(out_channels, eps=0.001)
+        self.conv = nn.Conv2d(in_channels, out_channels, **kwargs)
+        self.bn = nn.BatchNorm2d(out_channels)
 
     def forward(self, x):
         x = self.conv(x)
         x = self.bn(x)
-        return F.relu(x, inplace=True)
+        return F.relu(x)
 
 class TenNet_Tag(nn.Module): # input batchSize * 1 * tagNum * tagNum
-    def __init__(self, vocabulary_list, dropout_probability=0.1, filters=[3, 4, 5], filter_num=[100, 100, 100], in_channel=2, additional_matrix=None, max_length=8):
+    def __init__(self, tag_list, feature_dims, word_dims, dropout_prob, filters, filter_num, deeper, word_matrix, max_length=8):
         super().__init__()
         
-        self.Feature_Dimensions = Feature_Dimensions
-        self.WORD_DIM = Word_Dimensions
+        self.Feature_Dimensions = feature_dims
+        self.WORD_DIM = word_dims
 
-        self.VOCAB_SIZE = len(vocabulary_list)
-        self.DROPOUT_PROB = dropout_probability
-        self.IN_CHANNEL = in_channel
+        self.VOCAB_SIZE = len(tag_list)
+        self.DROPOUT_PROB = dropout_prob
+        self.IN_CHANNEL = 2
         self.FILTERS = filters
         self.FILTER_NUM = filter_num
         self.max_length = max_length
+        self.DEEPER = deeper
 
         self.embedding_unstatic = nn.Embedding(self.VOCAB_SIZE +1, self.WORD_DIM, padding_idx=self.VOCAB_SIZE)
         
         if self.IN_CHANNEL == 2:
             self.embedding_static = nn.Embedding(self.VOCAB_SIZE +1, self.WORD_DIM, padding_idx=self.VOCAB_SIZE)
-            self.WV_MATRIX = torch.cat((torch.FloatTensor(additional_matrix), torch.zeros((1,self.WORD_DIM))), 0)
+            self.WV_MATRIX = torch.cat((torch.FloatTensor(word_matrix), torch.zeros((1,self.WORD_DIM))), 0)
             self.embedding_static.weight.data.copy_(torch.from_numpy(np.asarray(self.WV_MATRIX)))
             self.embedding_static.weight.requires_grad = False           
 
-        self.branches = []
         for i in range(len(self.FILTERS)):
-            self.branches.append(BasicConv2d(2, self.FILTER_NUM[i], kernel_size=(self.FILTERS[i], self.WORD_DIM)).to(device))
+            if self.DEEPER:
+                conv = nn.Sequential(
+                    BasicConv2d(2, self.FILTER_NUM[i], kernel_size=(self.FILTERS[i], self.WORD_DIM)),
+                    BasicConv2d(self.FILTER_NUM[i], 4 * self.FILTER_NUM[i], kernel_size=1) )
+            else:
+                conv = nn.Sequential(
+                    BasicConv2d(2, self.FILTER_NUM[i], kernel_size=(self.FILTERS[i], self.WORD_DIM)))
+            setattr(self, f'conv_{i}', conv)
 
         self.pooling = GlobalMaxPool2d()
         
-        self.fc = nn.Sequential( 
-            nn.Dropout(p=dropout_probability, inplace=False),
-            nn.Linear(sum(self.FILTER_NUM), out_features=2048, bias=True),
-            nn.ReLU(inplace=True),
-            nn.Dropout(p=dropout_probability, inplace=False),
-            nn.Linear(in_features=2048, out_features=self.Feature_Dimensions, bias=True),
-            )
+        if self.DEEPER:
+            self.fc = nn.Sequential( 
+                nn.Dropout(p=self.DROPOUT_PROB, inplace=False),
+                nn.Linear(4 * sum(self.FILTER_NUM), out_features=4096, bias=True),
+                nn.BatchNorm1d(4096),
+                nn.ReLU(inplace=True),
+                nn.Dropout(p=self.DROPOUT_PROB, inplace=False),
+                nn.Linear(4096, out_features=4096, bias=True),
+                nn.BatchNorm1d(4096),
+                nn.ReLU(inplace=True),
+                nn.Dropout(p=self.DROPOUT_PROB, inplace=False),
+                nn.Linear(in_features=4096, out_features=self.Feature_Dimensions, bias=True),
+                )
+        else:
+            self.fc = nn.Sequential( 
+                nn.Dropout(p=self.DROPOUT_PROB, inplace=False),
+                nn.Linear(sum(self.FILTER_NUM), out_features=4096, bias=True),
+                nn.BatchNorm1d(4096),
+                nn.ReLU(inplace=True),
+                nn.Dropout(p=self.DROPOUT_PROB, inplace=False),
+                nn.Linear(4096, out_features=4096, bias=True),
+                nn.BatchNorm1d(4096),
+                nn.ReLU(inplace=True),
+                nn.Dropout(p=self.DROPOUT_PROB, inplace=False),
+                nn.Linear(in_features=4096, out_features=self.Feature_Dimensions, bias=True),
+                )
         
 
     def forward(self, tagsets):
@@ -76,7 +101,7 @@ class TenNet_Tag(nn.Module): # input batchSize * 1 * tagNum * tagNum
             index_list[i] = random.sample(index_list[i], min(len(index_list[i]), self.max_length)) 
             index_list[i] = index_list[i] + [self.VOCAB_SIZE for i in range(self.max_length-len(index_list[i]))]
 
-        index_list = torch.LongTensor(index_list).to(device)
+        index_list = torch.from_numpy(np.asarray(index_list))
         
         x = self.embedding_unstatic(index_list).view(-1, 1, self.max_length, self.WORD_DIM)
 
@@ -84,7 +109,7 @@ class TenNet_Tag(nn.Module): # input batchSize * 1 * tagNum * tagNum
             x2 = self.embedding_static(index_list).view(-1, 1, self.max_length, self.WORD_DIM)
             x = torch.cat((x, x2), 1)
 
-        out = [self.pooling(conv(x)).view(tagsets.shape[0], -1)  for conv in self.branches]
+        out = [self.pooling(self.get_conv(i)(x)).view(tagsets.shape[0], -1)  for i in range(len(self.FILTERS))]
         out = torch.cat(out, 1)
         out = self.fc(out)
         return F.normalize(out)

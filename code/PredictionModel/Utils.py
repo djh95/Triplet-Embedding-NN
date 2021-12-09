@@ -6,8 +6,10 @@ import random
 import os
 from enum import IntEnum
 
-from Define import *
-
+if torch.cuda.is_available():
+    device = torch.device('cuda')
+else:
+    device = torch.device('cpu')
 
 class LossModel (IntEnum):
     # tag -> feature ->tag

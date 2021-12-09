@@ -1,9 +1,7 @@
 import torch.nn as nn
 
-from Define import *
-
 class TagDecoder(nn.Module):
-    def __init__(self, tag_number, dropout_probability=0.2):
+    def __init__(self, Feature_Dimensions, tag_number, dropout_probability=0.2):
         super().__init__()
         self.decoder = nn.Sequential(
             # [b, 20] => [b, 64]

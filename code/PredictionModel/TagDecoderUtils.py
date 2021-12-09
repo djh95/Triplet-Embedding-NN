@@ -1,8 +1,6 @@
 import torch
 from jupyterplot import ProgressPlot
 from tqdm.notebook import tqdm
-
-from Define import *
 from .Utils import *
 
 
