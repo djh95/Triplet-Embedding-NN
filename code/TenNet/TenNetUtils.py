@@ -6,9 +6,8 @@ from jupyterplot import ProgressPlot
 from IPython.display import *
 import IPython.display
 
-from Define import *
-from .Visualization import *
-from .Utils import *
+from TenNet.Visualization import *
+from TenNet.Utils import *
 
 
 def save_TenNet(image_model, tag_model, optim, epoch, loss, name):

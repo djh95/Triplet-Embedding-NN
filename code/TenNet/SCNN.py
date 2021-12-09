@@ -4,7 +4,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 
-from .Utils import *
+from TenNet.Utils import *
 
 class EbeddingModel (IntEnum):
     # tag -> feature ->tag

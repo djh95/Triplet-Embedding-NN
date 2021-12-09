@@ -3,7 +3,7 @@ from tqdm.notebook import tqdm
 from jupyterplot import ProgressPlot
 from IPython.display import *
 
-from .Utils import *
+from TenNet.Utils import *
 
 
 

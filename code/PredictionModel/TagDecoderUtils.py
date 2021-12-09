@@ -1,7 +1,7 @@
 import torch
 from jupyterplot import ProgressPlot
 from tqdm.notebook import tqdm
-from .Utils import *
+from PredictionModel.Utils import *
 
 
 

@@ -6,7 +6,7 @@ import torch.nn.functional as F
 import random
 import os
 
-from .TenNetUtils import *
+from TenNet.TenNetUtils import *
 
 if torch.cuda.is_available():
     device = torch.device('cuda')
