@@ -6,6 +6,7 @@ from jupyterplot import ProgressPlot
 from IPython.display import *
 import IPython.display
 
+from Define import *
 from .Visualization import *
 from .Utils import *
 
@@ -58,7 +59,6 @@ def run(writer, image_model, tag_model, train_loader, valid_loader, train_loader
 
         #write_evalue_log(writer, evalue(test_loader, image_model, tag_model, k=3),  "test", e)
         evalu_both(train_loader_E, valid_loader_E, image_model, tag_model, writer, e)
-        print("")
 
         ten_res.append([list(loss_dis_train),list(loss_dis_valid)])
 

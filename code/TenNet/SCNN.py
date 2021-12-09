@@ -93,7 +93,7 @@ class TenNet_Tag(nn.Module): # input batchSize * 1 * tagNum * tagNum
                 nn.Dropout(p=self.DROPOUT_PROB, inplace=False),
                 nn.Linear(in_features=4096, out_features=self.Feature_Dimensions, bias=True),
                 )
-        
+      
 
     def forward(self, tagsets):
         index_list = get_multy_tag_indexes(tagsets)
