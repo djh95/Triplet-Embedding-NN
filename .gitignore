@@ -1,17 +1,18 @@
 # 此为注释 – 将被 Git 忽略
 .*
 *.pyc
-SavedModelState/*.*
-!.git*
 *.zip
-# 仅仅忽略项目根目录下的 TODO 文件，不包括 subdir/TODO
-NUS_WID/
-coco/
-# 忽略 build/ 目录下的所有文件
+# NUS_WID/, coco/目录下的文件
+/NUS_WID
+/coco
+/SavedModelState
+/code/runs
+# 不忽略
+!.git*
+# 忽略 __pycache__ 目录下的所有文件
 **/__pycache__/
-# 会忽略 doc/notes.txt 但不包括 doc/server/arch.txt
+
 glove.twitter.27B/glove.twitter.27B*
-# ignore all .txt files in the doc/ directory
 
 
  
