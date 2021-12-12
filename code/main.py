@@ -43,12 +43,12 @@ def main():
     parser.add_argument("--learning_rate", default=0.0006, type=float, help="learning rate")
     parser.add_argument("--decay_model", default="STEPLR", choices=["STEPLR"], help="learning rate decay model")
     parser.add_argument("--step_size", default=10, type=int, help="step size of step decay")
-    parser.add_argument("--decay_rate", default=0.9, type=float, help="decay rate of step decay")
+    parser.add_argument("--decay_rate", default=0.65, type=float, help="decay rate of step decay")
     parser.add_argument("--log_directory", default="runs/", help="log directory of tensorboard")
     parser.add_argument("--loss_lambda", default=0.1, type=float, help="weight of II triplet loss")
     parser.add_argument("--global_sample", default=False, action='store_true', help="whether select a positive sample globally")
     parser.add_argument("--deeper_tag_model", default=False, action='store_true', help="whether use a deeper tag model")
-    parser.add_argument("--tag_max_length", default=8, help="the max length of tags")
+    parser.add_argument("--tag_max_length", default=8, type=int, help="the max length of tags")
     
     # tag_weight
     #parser.add_argument("--gpu", default=-1, type=int, help="the number of gpu to be used")
@@ -64,6 +64,8 @@ def main():
         model_name = model_name + "_gs"
     model_name = model_name + "_ml_" + str(options.tag_max_length)
     model_name = model_name + "_md_" + str(options.margin_distance)
+
+    print("model_name:", model_name)
 
     with open('./job_info.txt', 'a') as f:
         f.write(options.job_num + ":" + model_name + "\n")
@@ -86,7 +88,7 @@ def main():
             if gpu.memoryTotal > 7000:
                 batch_size = 32
                 break
-
+    print("batch_size:", batch_size)
 # dataset
     if options.dataset == "NUS81": 
         train_data = nus.NUS_WIDE_Helper(nus.DataSetType.Train_81, min_tag_num=1)
