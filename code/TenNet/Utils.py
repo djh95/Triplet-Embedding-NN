@@ -267,10 +267,11 @@ def single_epoch_computation(image_model, tag_model, loader, triplet_loss, Lambd
     IT_negative_dis /= len(loader)
     II_negative_dis /= len(loader)
 
+    #print([d.item() for d in res[5]])
     print("The number of label occurrences in non-zero loss:")
     print(not_0_loss_tag_number)
-    print(loader.dataset.tag_list)
-    print(loader.dataset.image_number_for_tag)
+    #print(loader.dataset.tag_list)
+    #print(loader.dataset.image_number_for_tag)
 
     return loss, IT_positive_dis, II_positive_dis, IT_negative_dis, II_negative_dis, number_0_IT_loss, number_0_II_loss
 

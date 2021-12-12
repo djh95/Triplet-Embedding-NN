@@ -32,16 +32,15 @@ def getTenModel(tag_model, image_model, name):
     except FileNotFoundError:
         print("Can\'t found " + name)
 
-def run(writer, image_model, tag_model, train_loader, valid_loader, train_loader_E, valid_loader_E, triplet_loss, lr, gamma, Margin_Dis, global_sam, n_epochs, Lambda, print_log=True):
+def run(writer, image_model, tag_model, train_loader, valid_loader, train_loader_E, valid_loader_E, 
+        triplet_loss, optimizer, scheduler, Margin_Dis, global_sam, n_epochs, Lambda, print_log=True):
     
     name = "../SavedModelState/IT_model_" + str(Margin_Dis) +".ckpt"
     ten_res = []
     pbar = tqdm(range(n_epochs))
-    lr = lr
     Lambda = Lambda
     min_valid_loss = -1
-    optimizer = torch.optim.RMSprop([{'params' : image_model.parameters()}, {'params' : tag_model.parameters()}], lr=lr, alpha=0.99, eps=1e-08, weight_decay=0, momentum=0, centered=False)
-    scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma = gamma, last_epoch=-1)
+    
     for e in pbar:
         loss_dis_train = train(image_model, tag_model, train_loader, triplet_loss, Lambda, optimizer, Margin_Dis, global_sam)
         loss_dis_valid = validate(image_model, tag_model, valid_loader, triplet_loss, Lambda, optimizer, Margin_Dis, global_sam, e, min_valid_loss, True, name=name) 
