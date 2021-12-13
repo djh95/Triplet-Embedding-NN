@@ -110,8 +110,9 @@ def main():
     train_loader = torch.utils.data.DataLoader(train_data, shuffle=True, batch_size=batch_size, num_workers=num_workers, pin_memory=True)
     valid_loader = torch.utils.data.DataLoader(valid_data, shuffle=True, batch_size=batch_size, num_workers=num_workers, pin_memory=True)
     #for_evalue
-    train_loader_E = train_loader
-    valid_loader_E = valid_loader
+    train_loader_E = torch.utils.data.DataLoader(train_data, batch_size=int(batch_size/2), num_workers=num_workers, pin_memory=True)
+    valid_loader_E = torch.utils.data.DataLoader(valid_data, batch_size=int(batch_size/2), num_workers=num_workers, pin_memory=True)
+
 
 # log       
     log_path = options.log_directory + options.dataset + "/" + model_name + "/"
