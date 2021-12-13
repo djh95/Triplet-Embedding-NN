@@ -74,10 +74,10 @@ def main():
         Gpus = GPUtil.getGPUs()
         for gpu in Gpus:
             if gpu.memoryTotal > 30000:
-                batch_size = 320
+                batch_size = 256
                 break
             if gpu.memoryTotal > 15000:
-                batch_size = 160
+                batch_size = 128
                 break
             if gpu.memoryTotal > 12000:
                 batch_size = 64
