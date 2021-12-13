@@ -32,8 +32,25 @@ class BasicConv2d(nn.Module):
         x = self.bn(x)
         return F.relu(x)
 
+class Conv2dSeq(nn.Module):
+
+    def __init__(self, layer_num, in_channels, out_channels, kernel_size, **kwargs):
+        super(Conv2dSeq, self).__init__()
+        self.NUM = layer_num
+        for i in range(self.NUM):
+            conv = BasicConv2d(in_channels, out_channels, kernel_size=kernel_size, **kwargs)
+            setattr(self, f'conv_{i}', conv)
+
+    def get_conv(self, i):
+        return getattr(self, f'conv_{i}')
+
+    def forward(self, x):
+        for i in range(self.NUM):
+            x = self.get_conv(i)(x)
+        return x
+
 class TenNet_Tag(nn.Module): # input batchSize * 1 * tagNum * tagNum
-    def __init__(self, tag_list, feature_dims, word_dims, dropout_prob, filters, filter_num, deeper, word_matrix, max_length=8):
+    def __init__(self, tag_list, feature_dims, word_dims, dropout_prob, filters, filter_num, depth, word_matrix, max_length=8):
         super().__init__()
         
         self.Feature_Dimensions = feature_dims
@@ -45,7 +62,7 @@ class TenNet_Tag(nn.Module): # input batchSize * 1 * tagNum * tagNum
         self.FILTERS = filters
         self.FILTER_NUM = filter_num
         self.max_length = max_length
-        self.DEEPER = deeper
+        self.DEPTH = depth
 
         self.embedding_unstatic = nn.Embedding(self.VOCAB_SIZE +1, self.WORD_DIM, padding_idx=self.VOCAB_SIZE)
         
@@ -56,18 +73,23 @@ class TenNet_Tag(nn.Module): # input batchSize * 1 * tagNum * tagNum
             self.embedding_static.weight.requires_grad = False           
 
         for i in range(len(self.FILTERS)):
-            if self.DEEPER:
+            if self.DEPTH == 1:
+                conv = nn.Sequential(
+                    BasicConv2d(2, self.FILTER_NUM[i], kernel_size=(self.FILTERS[i], self.WORD_DIM)))
+            elif self.DEPTH == 2:
                 conv = nn.Sequential(
                     BasicConv2d(2, self.FILTER_NUM[i], kernel_size=(self.FILTERS[i], self.WORD_DIM)),
                     BasicConv2d(self.FILTER_NUM[i], 4 * self.FILTER_NUM[i], kernel_size=1) )
             else:
                 conv = nn.Sequential(
-                    BasicConv2d(2, self.FILTER_NUM[i], kernel_size=(self.FILTERS[i], self.WORD_DIM)))
+                    BasicConv2d(2, self.FILTER_NUM[i], kernel_size=(self.FILTERS[i], self.WORD_DIM)),
+                    BasicConv2d(self.FILTER_NUM[i], 4 * self.FILTER_NUM[i], kernel_size=1),
+                    Conv2dSeq(self.DEPTH-2, 4*self.FILTER_NUM[i], 4*self.FILTER_NUM[i], kernel_size=1) )
             setattr(self, f'conv_{i}', conv)
 
         self.pooling = GlobalMaxPool2d()
         
-        if self.DEEPER:
+        if self.self.DEPTH != 1:
             self.fc = nn.Sequential( 
                 nn.Dropout(p=self.DROPOUT_PROB, inplace=False),
                 nn.Linear(4 * sum(self.FILTER_NUM), out_features=4096, bias=True),

@@ -44,7 +44,9 @@ def run(writer, image_model, tag_model, train_loader, valid_loader, train_loader
     for e in pbar:
         loss_dis_train = train(image_model, tag_model, train_loader, triplet_loss, Lambda, optimizer, Margin_Dis, global_sam)
         loss_dis_valid = validate(image_model, tag_model, valid_loader, triplet_loss, Lambda, optimizer, Margin_Dis, global_sam, e, min_valid_loss, True, name=name) 
-        scheduler.step()
+        
+        if scheduler != None:
+            scheduler.step()
 
         write_loss_log(writer, loss_dis_train, "train", e)
         write_loss_log(writer, loss_dis_valid, "valid", e)

@@ -41,13 +41,13 @@ def main():
     parser.add_argument("--epoch", default=50, type=int, help="number of max epoch")
     parser.add_argument("--margin_distance", default=0.7, type=float, help="margin distance between positive and negative samples")
     parser.add_argument("--learning_rate", default=0.0006, type=float, help="learning rate")
-    parser.add_argument("--decay_model", default="STEPLR", choices=["STEPLR"], help="learning rate decay model")
+    parser.add_argument("--decay_model", default="STEPLR", choices=["STEPLR", "NONE"], help="learning rate decay model")
     parser.add_argument("--step_size", default=10, type=int, help="step size of step decay")
     parser.add_argument("--decay_rate", default=0.65, type=float, help="decay rate of step decay")
     parser.add_argument("--log_directory", default="runs/", help="log directory of tensorboard")
     parser.add_argument("--loss_lambda", default=0.1, type=float, help="weight of II triplet loss")
     parser.add_argument("--global_sample", default=False, action='store_true', help="whether select a positive sample globally")
-    parser.add_argument("--deeper_tag_model", default=False, action='store_true', help="whether use a deeper tag model")
+    parser.add_argument("--depth_of_tag_model", default=1, type=int, help="the number of convolutional layers in tag model")
     parser.add_argument("--tag_max_length", default=8, type=int, help="the max length of tags")
     
     # tag_weight
@@ -58,8 +58,7 @@ def main():
     # get name
     model_name = "_lr_" + str(options.learning_rate)
     model_name = model_name + "_dcy_" + str(options.decay_rate)
-    if options.deeper_tag_model:
-        model_name = model_name + "_deeper"
+    model_name = model_name + "_dep_" + str(options.depth_of_tag_model)
     if options.global_sample:
         model_name = model_name + "_gs"
     model_name = model_name + "_ml_" + str(options.tag_max_length)
@@ -125,9 +124,9 @@ def main():
     tag_list = valid_data.get_tag_list()
     filters=[3, 4, 5]
     filter_num=[100, 100, 100]
-    # tag_list, feature_dims, word_dims, dropout_prob, filters, filter_num, deeper, in_channel=2, word_matrix=None, max_length=8
+    # tag_list, feature_dims, word_dims, dropout_prob, filters, filter_num, depth, in_channel=2, word_matrix=None, max_length=8
     tag_model = TenNet.TenNet_Tag( tag_list, Feature_Dimensions, Word_Dimensions, 0.5, filters, 
-                                   filter_num, options.deeper_tag_model, word_matrix=static_word_matrix,
+                                   filter_num, options.depth_of_tag_model, word_matrix=static_word_matrix,
                                    max_length=options.tag_max_length).to(device)
 
     triplet_loss = TripletLossFunc(options.margin_distance)
@@ -140,6 +139,8 @@ def main():
     if options.decay_model == "STEPLR":
         scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=options.step_size, 
                                                     gamma=options.decay_rate)
+    elif options.decay_model == "NONE":
+        scheduler = None
     #scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma = gamma, last_epoch=-1)
 
 # run
