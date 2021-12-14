@@ -89,7 +89,7 @@ class TenNet_Tag(nn.Module): # input batchSize * 1 * tagNum * tagNum
 
         self.pooling = GlobalMaxPool2d()
         
-        if self.self.DEPTH != 1:
+        if self.DEPTH != 1:
             self.fc = nn.Sequential( 
                 nn.Dropout(p=self.DROPOUT_PROB, inplace=False),
                 nn.Linear(4 * sum(self.FILTER_NUM), out_features=4096, bias=True),

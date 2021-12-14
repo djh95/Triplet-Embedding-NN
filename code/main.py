@@ -57,6 +57,7 @@ def main():
 
     # get name
     model_name = "_lr_" + str(options.learning_rate)
+    model_name = model_name + "_dm_" + str(options.decay_model)
     model_name = model_name + "_dcy_" + str(options.decay_rate)
     model_name = model_name + "_dep_" + str(options.depth_of_tag_model)
     if options.global_sample:
