@@ -101,17 +101,11 @@ def main():
         valid_data = coco.coco_Helper(coco.DataSetType.Valid17, min_tag_num=1)
 
     num_workers = 16
-    #train_loader = torch.utils.data.DataLoader(train_data, shuffle=True, drop_last=True, batch_size=batch_size, num_workers=num_workers, pin_memory=True)
-    #valid_loader = torch.utils.data.DataLoader(valid_data, shuffle=True, drop_last=True, batch_size=batch_size, num_workers=num_workers, pin_memory=True)
-    #for_evalue
-    #train_loader_E = torch.utils.data.DataLoader(train_data, batch_size=int(batch_size/2), num_workers=num_workers, pin_memory=True)
-    #valid_loader_E = torch.utils.data.DataLoader(valid_data, batch_size=int(batch_size/2), num_workers=num_workers, pin_memory=True) 
-
-    train_loader = torch.utils.data.DataLoader(train_data, shuffle=True, batch_size=batch_size, num_workers=num_workers, pin_memory=True)
-    valid_loader = torch.utils.data.DataLoader(valid_data, shuffle=True, batch_size=batch_size, num_workers=num_workers, pin_memory=True)
+    train_loader = torch.utils.data.DataLoader(train_data, shuffle=True, drop_last=True, batch_size=batch_size, num_workers=num_workers, pin_memory=True)
+    valid_loader = torch.utils.data.DataLoader(valid_data, shuffle=True, drop_last=True, batch_size=batch_size, num_workers=num_workers, pin_memory=True)
     #for_evalue
     train_loader_E = torch.utils.data.DataLoader(train_data, batch_size=int(batch_size/2), num_workers=num_workers, pin_memory=True)
-    valid_loader_E = torch.utils.data.DataLoader(valid_data, batch_size=int(batch_size/2), num_workers=num_workers, pin_memory=True)
+    valid_loader_E = torch.utils.data.DataLoader(valid_data, batch_size=int(batch_size/2), num_workers=num_workers, pin_memory=True) 
 
 
 # log       
