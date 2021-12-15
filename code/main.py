@@ -42,35 +42,21 @@ def main():
     parser.add_argument("--margin_distance", default=0.7, type=float, help="margin distance between positive and negative samples")
     parser.add_argument("--learning_rate", default=0.0006, type=float, help="learning rate")
     parser.add_argument("--decay_model", default="STEPLR", choices=["STEPLR", "NONE"], help="learning rate decay model")
-    parser.add_argument("--step_size", default=10, type=int, help="step size of step decay")
+    parser.add_argument("--step_size", default=20, type=int, help="step size of step decay")
     parser.add_argument("--decay_rate", default=0.65, type=float, help="decay rate of step decay")
     parser.add_argument("--log_directory", default="runs/", help="log directory of tensorboard")
     parser.add_argument("--loss_lambda", default=0.1, type=float, help="weight of II triplet loss")
     parser.add_argument("--global_sample", default=False, action='store_true', help="whether select a positive sample globally")
     parser.add_argument("--depth_of_tag_model", default=1, type=int, help="the number of convolutional layers in tag model")
     parser.add_argument("--tag_max_length", default=8, type=int, help="the max length of tags")
+    parser.add_argument("--batch_size", default=-1, type=int, help="batch size")
     
     # tag_weight
     #parser.add_argument("--gpu", default=-1, type=int, help="the number of gpu to be used")
 
     options = parser.parse_args()
 
-    # get name
-    model_name = "_lr_" + str(options.learning_rate)
-    model_name = model_name + "_dm_" + str(options.decay_model)
-    model_name = model_name + "_dcy_" + str(options.decay_rate)
-    model_name = model_name + "_dep_" + str(options.depth_of_tag_model)
-    if options.global_sample:
-        model_name = model_name + "_gs"
-    model_name = model_name + "_ml_" + str(options.tag_max_length)
-    model_name = model_name + "_md_" + str(options.margin_distance)
-
-    print("model_name:", model_name)
-
-    with open('./job_info.txt', 'a') as f:
-        f.write(options.job_num + ":" + model_name + "\n")
-
-    if device == torch.device('cuda'):
+    if options.batch_size == -1 and device == torch.device('cuda'):
         Gpus = GPUtil.getGPUs()
         for gpu in Gpus:
             if gpu.memoryTotal > 30000:
@@ -89,6 +75,25 @@ def main():
                 batch_size = 32
                 break
     print("batch_size:", batch_size)
+
+    # get name
+    model_name = "_lr_" + str(options.learning_rate)
+    model_name = model_name + "_dm_" + str(options.decay_model)
+    model_name = model_name + "_dcy_" + str(options.decay_rate)
+    model_name = model_name + "_dep_" + str(options.depth_of_tag_model)
+    model_name = model_name + "_step_" + str(options.step_size)
+    if options.global_sample:
+        model_name = model_name + "_gs"
+    model_name = model_name + "_bs_" + str(batch_size)
+    model_name = model_name + "_ml_" + str(options.tag_max_length)
+    model_name = model_name + "_md_" + str(options.margin_distance)
+
+    print("model_name:", model_name)
+
+    with open('./job_info.txt', 'a') as f:
+        f.write(options.job_num + ":" + model_name + "\n")
+
+    
 # dataset
     if options.dataset == "NUS81": 
         train_data = nus.NUS_WIDE_Helper(nus.DataSetType.Train_81, min_tag_num=1)
