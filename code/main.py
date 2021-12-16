@@ -105,7 +105,7 @@ def main():
         train_data = coco.coco_Helper(coco.DataSetType.Train17, min_tag_num=1)
         valid_data = coco.coco_Helper(coco.DataSetType.Valid17, min_tag_num=1)
 
-    num_workers = 16
+    num_workers = 6
     train_loader = torch.utils.data.DataLoader(train_data, shuffle=True, drop_last=True, batch_size=batch_size, num_workers=num_workers, pin_memory=True)
     valid_loader = torch.utils.data.DataLoader(valid_data, shuffle=True, drop_last=True, batch_size=batch_size, num_workers=num_workers, pin_memory=True)
     #for_evalue
